@@ -7,7 +7,7 @@ with open("README.md", "r", encoding="utf-8") as f:
 
 setup(
     name="piaa-sdk",
-    version="1.0.1",
+    version="1.0.2",
     description="Official Python SDK for PIA Market Intelligence & Realtime Financial Platform",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -27,10 +27,11 @@ setup(
     python_requires=">=3.8",
     install_requires=[
         "httpx>=0.24.0",
+        "websockets>=11.0.0",
     ],
     extras_require={
-        "realtime": ["websockets>=11.0.0"],
-        "all": ["websockets>=11.0.0"],
+        "realtime": [],  # Included by default in v1.0.2+
+        "all": [],
     },
     classifiers=[
         "Development Status :: 5 - Production/Stable",

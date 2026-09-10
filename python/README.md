@@ -21,11 +21,7 @@ Designed for institutional quantitative trading bots, financial analytics, finte
 ## Installation
 
 ```bash
-# Core REST client
 pip install piaa-sdk
-
-# With WebSocket realtime streaming support
-pip install "piaa-sdk[realtime]"
 ```
 
 ---

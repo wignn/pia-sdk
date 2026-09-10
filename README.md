@@ -81,7 +81,7 @@ client.realtime.connect();
 ### Installation
 
 ```bash
-pip install "piaa-sdk[realtime]"
+pip install piaa-sdk
 ```
 
 ### Synchronous Usage
