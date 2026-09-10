@@ -28,14 +28,14 @@
 
 ## Architectural Highlights
 
-- 🌐 **Unified API Gateway**: Clean routing for both REST and WebSocket under `api-engine.wign.dev`:
+- **Unified API Gateway**: Clean routing for both REST and WebSocket under `api-engine.wign.dev`:
   - REST Base URL: `https://api-engine.wign.dev`
   - Realtime Stream: `wss://api-engine.wign.dev/api/v1/ws`
-- 🔒 **In-Band Message Authentication**: Opens WebSocket connections cleanly without token query strings (preventing URL leakage in browser histories and proxy logs) and authenticates via an encrypted initial frame.
-- 🔁 **Enterprise-Grade Resiliency**: Automatic exponential backoff with full jitter on transient failures (`408`, `429`, `500`, `502`, `503`, `504`) and adherence to HTTP `Retry-After` headers.
-- 📊 **Real-time Quota Telemetry**: Native parsing of RFC 6585 and daily quota headers (`X-RateLimit-*`, `X-DailyQuota-*`).
-- 🛡️ **Typed Exception Hierarchy**: Actionable, structured error classes (`AuthenticationError`, `RateLimitError`, `TimeoutError`, `ValidationError`, `PermissionError`).
-- 🙈 **Zero Sensitive Data Leaks**: Automatic regex sanitization of API keys (`wi_live_...`) and Bearer tokens in error strings and logs.
+- **In-Band Message Authentication**: Opens WebSocket connections cleanly without token query strings (preventing URL leakage in browser histories and proxy logs) and authenticates via an encrypted initial frame.
+- **Enterprise-Grade Resiliency**: Automatic exponential backoff with full jitter on transient failures (`408`, `429`, `500`, `502`, `503`, `504`) and adherence to HTTP `Retry-After` headers.
+- **Real-time Quota Telemetry**: Native parsing of RFC 6585 and daily quota headers (`X-RateLimit-*`, `X-DailyQuota-*`).
+- **Typed Exception Hierarchy**: Actionable, structured error classes (`AuthenticationError`, `RateLimitError`, `TimeoutError`, `ValidationError`, `PermissionError`).
+- **Zero Sensitive Data Leaks**: Automatic regex sanitization of API keys (`wi_live_...`) and Bearer tokens in error strings and logs.
 
 ---
 
@@ -72,7 +72,7 @@ client.realtime.on("tick", (tick) => {
 client.realtime.connect();
 ```
 
-👉 [Read TypeScript SDK Documentation](./typescript/README.md)
+[Read TypeScript SDK Documentation](./typescript/README.md)
 
 ---
 
@@ -115,7 +115,7 @@ async def main():
 asyncio.run(main())
 ```
 
-👉 [Read Python SDK Documentation](./python/README.md)
+[Read Python SDK Documentation](./python/README.md)
 
 ---
 
@@ -127,4 +127,4 @@ Please report vulnerabilities directly to `wign@wign.dev` or through a private a
 
 ## License
 
-MIT © 2026 Merrr <wign@wign.dev> (See [LICENSE](./LICENSE)).
+MIT © 2026 wign <wign@wign.dev> (See [LICENSE](./LICENSE)).

@@ -8,12 +8,11 @@ Designed for institutional algorithmic traders, fintech dashboards, and quantita
 
 ## Features
 
-- ⚡ **Zero-Fuss Sensible Defaults**: Connect in 3 lines of code with pre-configured endpoints and sensible timeout/retry defaults.
-- 🔁 **Enterprise Resiliency**: Automatic exponential backoff with full jitter for transient 5xx/429 network hiccups and retry-after headers.
-- 🛡️ **Typed Error Hierarchy**: Clear, actionable, strongly-typed errors (`AuthenticationError`, `RateLimitError`, `TimeoutError`, `ValidationError`, `NetworkError`).
-- 🔒 **Zero Sensitive Data Leaks**: Automatic redaction of API keys, bearer tokens, and secrets from error logs and stack traces.
-- 📡 **Cross-Platform Realtime Streaming**: Built-in resilient WebSocket client with **In-Band Message Authentication**, ping/pong keep-alives, and automatic re-subscription on reconnect.
-- 📊 **Rate Limit Telemetry**: Real-time inspection of RFC 6585 and daily quota headers (`X-RateLimit-*`, `X-DailyQuota-*`).
+- **Zero-Fuss Sensible Defaults**: Connect in 3 lines of code with pre-configured endpoints and sensible timeout/retry defaults.
+- **Typed Error Hierarchy**: Clear, actionable, strongly-typed errors (`AuthenticationError`, `RateLimitError`, `TimeoutError`, `ValidationError`, `NetworkError`).
+- **Zero Sensitive Data Leaks**: Automatic redaction of API keys, bearer tokens, and secrets from error logs and stack traces.
+- **Cross-Platform Realtime Streaming**: Built-in resilient WebSocket client with **In-Band Message Authentication**, ping/pong keep-alives, and automatic re-subscription on reconnect.
+- **Rate Limit Telemetry**: Real-time inspection of RFC 6585 and daily quota headers (`X-RateLimit-*`, `X-DailyQuota-*`).
 
 ---
 

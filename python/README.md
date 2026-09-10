@@ -8,13 +8,12 @@ Designed for institutional quantitative trading bots, financial analytics, finte
 
 ## Key Features
 
-- ⚡ **Simple, Intuitive API**: Start fetching market data in under 3 lines of code with zero unnecessary ceremony.
-- 🔁 **Enterprise Resiliency**: Automatic exponential backoff with full jitter on transient network errors (`5xx`, `408`, `429`) and respect for `Retry-After` headers.
-- 📡 **Cross-Platform Realtime Streaming**: Resilient WebSocket client featuring **In-Band Message Authentication**, ping/pong keep-alives, auto-reconnect, and dynamic symbol subscriptions.
-- 🛡️ **Typed Exception Hierarchy**: Actionable exceptions (`AuthenticationError`, `RateLimitError`, `TimeoutError`, `ValidationError`, `NetworkError`) with detailed quota telemetry attributes.
-- 🔒 **Zero Sensitive Data Leaks**: Automatic regex redaction of `wi_live_...` API keys and Bearer tokens in error strings and logs.
-- 🚀 **Dual Sync & Async Support**: Both synchronous (`PiaClient`) and modern asyncio (`AsyncPiaClient`) interfaces available.
-- 🏷️ **Type Hinting**: Fully typed with PEP 561 `py.typed` marker for flawless IDE autocompletion and MyPy verification.
+- **Simple, Intuitive API**: Start fetching market data in under 3 lines of code with zero unnecessary ceremony.
+- **Cross-Platform Realtime Streaming**: Resilient WebSocket client featuring **In-Band Message Authentication**, ping/pong keep-alives, auto-reconnect, and dynamic symbol subscriptions.
+- **Typed Exception Hierarchy**: Actionable exceptions (`AuthenticationError`, `RateLimitError`, `TimeoutError`, `ValidationError`, `NetworkError`) with detailed quota telemetry attributes.
+- **Zero Sensitive Data Leaks**: Automatic regex redaction of `wi_live_...` API keys and Bearer tokens in error strings and logs.
+- **Dual Sync & Async Support**: Both synchronous (`PiaClient`) and modern asyncio (`AsyncPiaClient`) interfaces available.
+- **Type Hinting**: Fully typed with PEP 561 `py.typed` marker for flawless IDE autocompletion and MyPy verification.
 
 ---
 
