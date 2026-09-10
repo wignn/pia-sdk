@@ -1,0 +1,29 @@
+name: "Feature Request"
+description: "Suggest an idea or enhancement for PIA SDKs"
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: dropdown
+    id: sdk
+    attributes:
+      label: Target SDK
+      options:
+        - "TypeScript (@piaa/sdk)"
+        - "Python (piaa-sdk)"
+        - "Both"
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or Motivation
+      description: Is your feature request related to a problem?
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: Describe the solution you'd like to see.
+    validations:
+      required: true

@@ -1,0 +1,43 @@
+name: "Bug Report"
+description: "File a bug report for TypeScript or Python SDK"
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: "Thanks for taking the time to report an issue!"
+  - type: dropdown
+    id: sdk
+    attributes:
+      label: Affected SDK
+      options:
+        - "TypeScript (@piaa/sdk)"
+        - "Python (piaa-sdk)"
+        - "Both"
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of the bug.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: Minimal code snippet or steps to reproduce the behavior.
+      placeholder: |
+        ```python
+        # or typescript
+        ```
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What did you expect to happen?
+    validations:
+      required: true
