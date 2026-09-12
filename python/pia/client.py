@@ -10,6 +10,8 @@ import httpx
 from .config import PiaConfig
 from .logger import setup_logger
 from .realtime import AsyncRealtimeClient, RealtimeClient
+from .resources.economic import AsyncEconomicResource, EconomicResource
+from .resources.fixed_income import AsyncFixedIncomeResource, FixedIncomeResource
 from .resources.market import AsyncMarketResource, MarketResource
 from .resources.news import AsyncNewsResource, NewsResource
 from .resources.social import AsyncSocialResource, SocialResource
@@ -62,6 +64,8 @@ class PiaClient:
         self.market = MarketResource(self._transport)
         self.social = SocialResource(self._transport)
         self.news = NewsResource(self._transport)
+        self.economic = EconomicResource(self._transport)
+        self.fixed_income = FixedIncomeResource(self._transport)
         self.ws = WsResource(self._transport)
         self.realtime = RealtimeClient(self.config, logger=self.logger)
 
@@ -127,6 +131,8 @@ class AsyncPiaClient:
         self.market = AsyncMarketResource(self._transport)
         self.social = AsyncSocialResource(self._transport)
         self.news = AsyncNewsResource(self._transport)
+        self.economic = AsyncEconomicResource(self._transport)
+        self.fixed_income = AsyncFixedIncomeResource(self._transport)
         self.ws = AsyncWsResource(self._transport)
         self.realtime = AsyncRealtimeClient(self.config, logger=self.logger)
 

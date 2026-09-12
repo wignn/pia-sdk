@@ -11,7 +11,7 @@ export class SocialResource {
   /**
    * Fetches the latest social sentiment posts and discussions.
    */
-  public async getPosts(options?: GetSocialOptions): Promise<SocialFeedResponse> {
+  public async getFeed(options?: GetSocialOptions): Promise<SocialFeedResponse> {
     const params = new URLSearchParams();
     if (options?.symbol) params.set("symbol", options.symbol.trim().toUpperCase());
     if (options?.limit) params.set("limit", String(options.limit));
@@ -19,10 +19,17 @@ export class SocialResource {
 
     const query = params.toString() ? `?${params.toString()}` : "";
     return this.transport.request<SocialFeedResponse>(
-      `/api/v1/social/posts${query}`,
+      `/api/v1/social/feed${query}`,
       "GET",
       undefined,
       options
     );
+  }
+
+  /**
+   * @deprecated Use `getFeed(options)` instead.
+   */
+  public async getPosts(options?: GetSocialOptions): Promise<SocialFeedResponse> {
+    return this.getFeed(options);
   }
 }

@@ -9,7 +9,7 @@ from pia import PiaClient
 class TestOtherResources(unittest.TestCase):
     def test_social_posts_resource(self):
         def mock_handler(request: httpx.Request) -> httpx.Response:
-            self.assertIn("/api/v1/social/posts", str(request.url))
+            self.assertIn("/api/v1/social/feed", str(request.url))
             self.assertIn("symbol=BTC", str(request.url))
             return httpx.Response(
                 200,

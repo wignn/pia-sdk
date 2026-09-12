@@ -81,4 +81,28 @@ export class MarketResource {
       options
     );
   }
+
+  /**
+   * Retrieves AI/Quant market insights and price movement narrative for a given instrument.
+   */
+  public async getInsights(symbol: string, options?: RequestOptions): Promise<any> {
+    if (!symbol || typeof symbol !== "string" || symbol.trim() === "") {
+      throw new ValidationError("Symbol must be a non-empty string.", "symbol");
+    }
+
+    const cleanSymbol = symbol.trim().toUpperCase();
+    return this.transport.request<any>(
+      `/api/v1/market/insights/${encodeURIComponent(cleanSymbol)}`,
+      "GET",
+      undefined,
+      options
+    );
+  }
+
+  /**
+   * @deprecated Use `getInsights(symbol)` instead.
+   */
+  public async getWhy(symbol: string, options?: RequestOptions): Promise<any> {
+    return this.getInsights(symbol, options);
+  }
 }

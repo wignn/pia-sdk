@@ -57,6 +57,16 @@ class MarketResource:
         data = self._transport.request(endpoint, method="GET")
         return OrderBook.from_dict(data)
 
+    def get_insights(self, symbol: str) -> Dict[str, Any]:
+        """Retrieves market insights and movement narrative for an instrument."""
+        clean_symbol = _validate_symbol(symbol)
+        endpoint = f"/api/v1/market/insights/{quote(clean_symbol)}"
+        return self._transport.request(endpoint, method="GET")
+
+    def get_why(self, symbol: str) -> Dict[str, Any]:
+        """Deprecated alias for `get_insights`."""
+        return self.get_insights(symbol)
+
 
 class AsyncMarketResource:
     """Asynchronous Market Data API resource."""
@@ -98,3 +108,13 @@ class AsyncMarketResource:
         endpoint = f"/api/v1/market/orderbook/{quote(clean_symbol)}"
         data = await self._transport.request(endpoint, method="GET")
         return OrderBook.from_dict(data)
+
+    async def get_insights(self, symbol: str) -> Dict[str, Any]:
+        """Retrieves market insights and movement narrative for an instrument."""
+        clean_symbol = _validate_symbol(symbol)
+        endpoint = f"/api/v1/market/insights/{quote(clean_symbol)}"
+        return await self._transport.request(endpoint, method="GET")
+
+    async def get_why(self, symbol: str) -> Dict[str, Any]:
+        """Deprecated alias for `get_insights`."""
+        return await self.get_insights(symbol)

@@ -114,7 +114,50 @@ export interface NewsFeedResponse {
 
 export interface GetNewsOptions extends RequestOptions {
   symbols?: string[];
+  category?: "forex" | "stock" | "all" | string;
   limit?: number;
+}
+
+export interface EconomicEvent {
+  id?: string;
+  event: string;
+  country: string;
+  currency?: string;
+  date: string;
+  time?: string;
+  actual?: number | null;
+  forecast?: number | null;
+  previous?: number | null;
+  impact?: "high" | "medium" | "low" | string;
+}
+
+export interface EconomicCalendarResponse {
+  total: number;
+  items: EconomicEvent[];
+}
+
+export interface GetCalendarOptions extends RequestOptions {
+  impact?: string;
+  limit?: number;
+}
+
+export interface YieldCurvePoint {
+  tenor: string;
+  yield: number;
+  date?: string;
+}
+
+export interface YieldCurveResponse {
+  date: string;
+  points: YieldCurvePoint[];
+}
+
+export interface MarketInsight {
+  symbol: string;
+  title: string;
+  summary: string;
+  sentiment?: string;
+  confidence?: number;
 }
 
 export interface WsTicketResponse {

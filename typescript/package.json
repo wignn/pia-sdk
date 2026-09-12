@@ -1,6 +1,6 @@
 {
   "name": "@piaa/sdk",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "description": "Official TypeScript/JavaScript SDK for PIA Market Intelligence Platform",
   "main": "./dist/index.js",
   "module": "./dist/index.js",

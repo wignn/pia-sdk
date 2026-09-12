@@ -40,7 +40,7 @@ from .types import (
     WsTicketResponse,
 )
 
-__version__ = "1.0.2"
+__version__ = "1.1.0"
 
 __all__ = [
     "PiaClient",

@@ -14,7 +14,7 @@ class SocialResource:
     def __init__(self, transport: SyncTransport) -> None:
         self._transport = transport
 
-    def get_posts(
+    def get_feed(
         self,
         *,
         symbol: Optional[str] = None,
@@ -30,8 +30,18 @@ class SocialResource:
         if cursor:
             params["cursor"] = cursor
 
-        data = self._transport.request("/api/v1/social/posts", method="GET", params=params)
+        data = self._transport.request("/api/v1/social/feed", method="GET", params=params)
         return SocialFeedResponse.from_dict(data)
+
+    def get_posts(
+        self,
+        *,
+        symbol: Optional[str] = None,
+        limit: Optional[int] = None,
+        cursor: Optional[str] = None,
+    ) -> SocialFeedResponse:
+        """Deprecated alias for `get_feed`."""
+        return self.get_feed(symbol=symbol, limit=limit, cursor=cursor)
 
 
 class AsyncSocialResource:
@@ -40,7 +50,7 @@ class AsyncSocialResource:
     def __init__(self, transport: AsyncTransport) -> None:
         self._transport = transport
 
-    async def get_posts(
+    async def get_feed(
         self,
         *,
         symbol: Optional[str] = None,
@@ -56,5 +66,15 @@ class AsyncSocialResource:
         if cursor:
             params["cursor"] = cursor
 
-        data = await self._transport.request("/api/v1/social/posts", method="GET", params=params)
+        data = await self._transport.request("/api/v1/social/feed", method="GET", params=params)
         return SocialFeedResponse.from_dict(data)
+
+    async def get_posts(
+        self,
+        *,
+        symbol: Optional[str] = None,
+        limit: Optional[int] = None,
+        cursor: Optional[str] = None,
+    ) -> SocialFeedResponse:
+        """Deprecated alias for `get_feed`."""
+        return await self.get_feed(symbol=symbol, limit=limit, cursor=cursor)

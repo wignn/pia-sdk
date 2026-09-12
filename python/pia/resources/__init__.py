@@ -1,5 +1,7 @@
 """Official PIA SDK - Resources module."""
 
+from .economic import AsyncEconomicResource, EconomicResource
+from .fixed_income import AsyncFixedIncomeResource, FixedIncomeResource
 from .market import AsyncMarketResource, MarketResource
 from .news import AsyncNewsResource, NewsResource
 from .social import AsyncSocialResource, SocialResource
@@ -12,6 +14,10 @@ __all__ = [
     "AsyncSocialResource",
     "NewsResource",
     "AsyncNewsResource",
+    "EconomicResource",
+    "AsyncEconomicResource",
+    "FixedIncomeResource",
+    "AsyncFixedIncomeResource",
     "WsResource",
     "AsyncWsResource",
 ]

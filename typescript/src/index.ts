@@ -52,6 +52,12 @@ export {
   type NewsArticle,
   type NewsFeedResponse,
   type GetNewsOptions,
+  type EconomicEvent,
+  type EconomicCalendarResponse,
+  type GetCalendarOptions,
+  type YieldCurvePoint,
+  type YieldCurveResponse,
+  type MarketInsight,
   type WsTicketResponse,
 } from "./types";
 

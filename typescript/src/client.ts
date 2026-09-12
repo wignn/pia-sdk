@@ -8,6 +8,8 @@ import { RealtimeClient } from "./realtime/socket";
 import { MarketResource } from "./resources/market";
 import { NewsResource } from "./resources/news";
 import { SocialResource } from "./resources/social";
+import { EconomicResource } from "./resources/economic";
+import { FixedIncomeResource } from "./resources/fixed-income";
 import { WsResource } from "./resources/ws";
 import type { RateLimitInfo } from "./types";
 
@@ -29,6 +31,16 @@ export class PiaClient {
    * Financial news resource.
    */
   public readonly news: NewsResource;
+
+  /**
+   * Macroeconomic calendar and indicators resource.
+   */
+  public readonly economic: EconomicResource;
+
+  /**
+   * Sovereign bond yields and fixed income rates resource.
+   */
+  public readonly fixedIncome: FixedIncomeResource;
 
   /**
    * WebSocket ticket issuance resource.
@@ -58,6 +70,8 @@ export class PiaClient {
     this.market = new MarketResource(this.transport);
     this.social = new SocialResource(this.transport);
     this.news = new NewsResource(this.transport);
+    this.economic = new EconomicResource(this.transport);
+    this.fixedIncome = new FixedIncomeResource(this.transport);
     this.ws = new WsResource(this.transport);
     this.realtime = new RealtimeClient(this.config as ResolvedPiaConfig);
   }
