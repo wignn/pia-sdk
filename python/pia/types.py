@@ -287,3 +287,271 @@ class WsTicketResponse:
             expires_in=data.get("expires_in"),
             ws_url=data.get("ws_url"),
         )
+
+
+@dataclass
+class SocialPostItem:
+    author_username: str
+    text: str
+    url: str
+    created_at: str
+    platform: str = "twitter"
+    author_display_name: Optional[str] = None
+    like_count: int = 0
+    retweet_count: int = 0
+    media_urls: List[str] = field(default_factory=list)
+    source_account: Optional[str] = None
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> SocialPostItem:
+        return cls(
+            author_username=str(data.get("author_username", "")),
+            text=str(data.get("text", "")),
+            url=str(data.get("url", "")),
+            created_at=str(data.get("created_at", "")),
+            platform=str(data.get("platform", "twitter")),
+            author_display_name=data.get("author_display_name"),
+            like_count=int(data.get("like_count", 0) or 0),
+            retweet_count=int(data.get("retweet_count", 0) or 0),
+            media_urls=data.get("media_urls") or [],
+            source_account=data.get("source_account"),
+        )
+
+
+@dataclass
+class SocialPostsResponse:
+    has_more: bool
+    items: List[SocialPostItem] = field(default_factory=list)
+    next_before: Optional[str] = None
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> SocialPostsResponse:
+        raw_items = data.get("items") or []
+        items = [SocialPostItem.from_dict(it) for it in raw_items]
+        return cls(
+            has_more=bool(data.get("has_more", False)),
+            items=items,
+            next_before=data.get("next_before"),
+        )
+
+
+@dataclass
+class OptionContract:
+    symbol: str
+    strike: float
+    expiration: str
+    option_type: str
+    bid: Optional[float] = None
+    ask: Optional[float] = None
+    last: Optional[float] = None
+    volume: Optional[int] = None
+    open_interest: Optional[int] = None
+    implied_volatility: Optional[float] = None
+    delta: Optional[float] = None
+    gamma: Optional[float] = None
+    theta: Optional[float] = None
+    vega: Optional[float] = None
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> OptionContract:
+        def _flt(k: str) -> Optional[float]:
+            v = data.get(k)
+            return float(v) if v is not None else None
+
+        def _int(k: str) -> Optional[int]:
+            v = data.get(k)
+            return int(v) if v is not None else None
+
+        return cls(
+            symbol=str(data.get("symbol", "")),
+            strike=float(data.get("strike", 0.0) or 0.0),
+            expiration=str(data.get("expiration", "")),
+            option_type=str(data.get("option_type", "")),
+            bid=_flt("bid"),
+            ask=_flt("ask"),
+            last=_flt("last"),
+            volume=_int("volume"),
+            open_interest=_int("open_interest"),
+            implied_volatility=_flt("implied_volatility"),
+            delta=_flt("delta"),
+            gamma=_flt("gamma"),
+            theta=_flt("theta"),
+            vega=_flt("vega"),
+        )
+
+
+@dataclass
+class OptionChainResponse:
+    symbol: str
+    expirations: List[str] = field(default_factory=list)
+    contracts: List[OptionContract] = field(default_factory=list)
+    underlying_price: Optional[float] = None
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> OptionChainResponse:
+        raw_c = data.get("contracts") or []
+        contracts = [OptionContract.from_dict(c) for c in raw_c]
+        u_price = data.get("underlying_price")
+        return cls(
+            symbol=str(data.get("symbol", "")).upper(),
+            expirations=data.get("expirations") or [],
+            contracts=contracts,
+            underlying_price=float(u_price) if u_price is not None else None,
+        )
+
+
+@dataclass
+class OptionGexResponse:
+    symbol: str
+    net_gex: Optional[float] = None
+    total_call_gex: Optional[float] = None
+    total_put_gex: Optional[float] = None
+    zero_gamma_level: Optional[float] = None
+    major_positive_levels: List[Dict[str, Any]] = field(default_factory=list)
+    major_negative_levels: List[Dict[str, Any]] = field(default_factory=list)
+    updated_at: Optional[str] = None
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> OptionGexResponse:
+        def _flt(k: str) -> Optional[float]:
+            v = data.get(k)
+            return float(v) if v is not None else None
+
+        return cls(
+            symbol=str(data.get("symbol", "")).upper(),
+            net_gex=_flt("net_gex"),
+            total_call_gex=_flt("total_call_gex"),
+            total_put_gex=_flt("total_put_gex"),
+            zero_gamma_level=_flt("zero_gamma_level"),
+            major_positive_levels=data.get("major_positive_levels") or [],
+            major_negative_levels=data.get("major_negative_levels") or [],
+            updated_at=data.get("updated_at"),
+        )
+
+
+@dataclass
+class OptionSummaryResponse:
+    total_volume: Optional[int] = None
+    total_open_interest: Optional[int] = None
+    put_call_ratio: Optional[float] = None
+    most_active_symbols: List[Dict[str, Any]] = field(default_factory=list)
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> OptionSummaryResponse:
+        pcr = data.get("put_call_ratio")
+        vol = data.get("total_volume")
+        oi = data.get("total_open_interest")
+        return cls(
+            total_volume=int(vol) if vol is not None else None,
+            total_open_interest=int(oi) if oi is not None else None,
+            put_call_ratio=float(pcr) if pcr is not None else None,
+            most_active_symbols=data.get("most_active_symbols") or [],
+        )
+
+
+@dataclass
+class FearGreedData:
+    score: float
+    rating: str
+    timestamp: Any
+    previous_close: Optional[float] = None
+    previous_1_week: Optional[float] = None
+    previous_1_month: Optional[float] = None
+    previous_1_year: Optional[float] = None
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> FearGreedData:
+        def _flt(k: str) -> Optional[float]:
+            v = data.get(k)
+            return float(v) if v is not None else None
+
+        return cls(
+            score=float(data.get("score", 0.0) or 0.0),
+            rating=str(data.get("rating", "")),
+            timestamp=data.get("timestamp"),
+            previous_close=_flt("previous_close"),
+            previous_1_week=_flt("previous_1_week"),
+            previous_1_month=_flt("previous_1_month"),
+            previous_1_year=_flt("previous_1_year"),
+        )
+
+
+@dataclass
+class FearGreedHistoryResponse:
+    current: FearGreedData
+    history: List[Dict[str, Any]] = field(default_factory=list)
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> FearGreedHistoryResponse:
+        current_data = data.get("current") or data
+        return cls(
+            current=FearGreedData.from_dict(current_data),
+            history=data.get("history") or [],
+        )
+
+
+@dataclass
+class CotPositioning:
+    market_code: str
+    report_date: str
+    market_name: Optional[str] = None
+    commercial_long: Optional[int] = None
+    commercial_short: Optional[int] = None
+    non_commercial_long: Optional[int] = None
+    non_commercial_short: Optional[int] = None
+    net_position: Optional[int] = None
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> CotPositioning:
+        def _int(k: str) -> Optional[int]:
+            v = data.get(k)
+            return int(v) if v is not None else None
+
+        return cls(
+            market_code=str(data.get("market_code", "")),
+            report_date=str(data.get("report_date", "")),
+            market_name=data.get("market_name"),
+            commercial_long=_int("commercial_long"),
+            commercial_short=_int("commercial_short"),
+            non_commercial_long=_int("non_commercial_long"),
+            non_commercial_short=_int("non_commercial_short"),
+            net_position=_int("net_position"),
+        )
+
+
+@dataclass
+class CotReportResponse:
+    reports: List[CotPositioning] = field(default_factory=list)
+    symbol: Optional[str] = None
+    market_code: Optional[str] = None
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> CotReportResponse:
+        raw = data.get("reports") or data.get("items") or []
+        return cls(
+            reports=[CotPositioning.from_dict(r) for r in raw],
+            symbol=data.get("symbol"),
+            market_code=data.get("market_code"),
+        )
+
+
+@dataclass
+class CentralBankStanceResponse:
+    bank: str
+    stance: str
+    name: Optional[str] = None
+    rate: Optional[float] = None
+    last_updated: Optional[str] = None
+    summary: Optional[str] = None
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> CentralBankStanceResponse:
+        r = data.get("rate")
+        return cls(
+            bank=str(data.get("bank", "")),
+            stance=str(data.get("stance", "")),
+            name=data.get("name"),
+            rate=float(r) if r is not None else None,
+            last_updated=data.get("last_updated"),
+            summary=data.get("summary"),
+        )

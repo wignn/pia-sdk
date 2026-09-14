@@ -24,7 +24,7 @@ from .errors import (
 from .logger import setup_logger
 from .types import RateLimitInfo
 
-SDK_VERSION = "1.0.2"
+SDK_VERSION = "1.2.0"
 RETRYABLE_STATUS_CODES: Set[int] = {408, 429, 500, 502, 503, 504}
 
 
@@ -132,6 +132,7 @@ class SyncTransport:
             base_url=config.base_url,
             timeout=config.timeout,
             headers={
+                "Authorization": f"Bearer {config.api_key}",
                 "x-api-key": config.api_key,
                 "Accept": "application/json",
                 "User-Agent": f"pia-sdk-py/{SDK_VERSION}",
@@ -161,6 +162,7 @@ class SyncTransport:
 
         url = f"{self.config.base_url}{endpoint if endpoint.startswith('/') else '/' + endpoint}"
         req_headers = {
+            "Authorization": f"Bearer {self.config.api_key}",
             "x-api-key": self.config.api_key,
             "Accept": "application/json",
             "User-Agent": f"pia-sdk-py/{SDK_VERSION}",
@@ -255,6 +257,7 @@ class AsyncTransport:
             base_url=config.base_url,
             timeout=config.timeout,
             headers={
+                "Authorization": f"Bearer {config.api_key}",
                 "x-api-key": config.api_key,
                 "Accept": "application/json",
                 "User-Agent": f"pia-sdk-py/{SDK_VERSION}",
@@ -284,6 +287,7 @@ class AsyncTransport:
 
         url = f"{self.config.base_url}{endpoint if endpoint.startswith('/') else '/' + endpoint}"
         req_headers = {
+            "Authorization": f"Bearer {self.config.api_key}",
             "x-api-key": self.config.api_key,
             "Accept": "application/json",
             "User-Agent": f"pia-sdk-py/{SDK_VERSION}",

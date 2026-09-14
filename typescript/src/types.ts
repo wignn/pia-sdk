@@ -165,3 +165,111 @@ export interface WsTicketResponse {
   expires_in?: number;
   ws_url?: string;
 }
+
+export interface SocialPostItem {
+  author_username: string;
+  author_display_name?: string;
+  text: string;
+  url: string;
+  created_at: string;
+  platform: string;
+  like_count?: number;
+  retweet_count?: number;
+  media_urls?: string[];
+  source_account?: string;
+}
+
+export interface SocialPostsResponse {
+  has_more: boolean;
+  items: SocialPostItem[];
+  next_before?: string | null;
+}
+
+export interface GetSocialPostsOptions extends RequestOptions {
+  limit?: number;
+  cursor?: string;
+  symbol?: string;
+}
+
+export interface OptionContract {
+  symbol: string;
+  strike: number;
+  expiration: string;
+  option_type: "call" | "put" | string;
+  bid?: number;
+  ask?: number;
+  last?: number;
+  volume?: number;
+  open_interest?: number;
+  implied_volatility?: number;
+  delta?: number;
+  gamma?: number;
+  theta?: number;
+  vega?: number;
+}
+
+export interface OptionChainResponse {
+  symbol: string;
+  underlying_price?: number;
+  expirations: string[];
+  contracts: OptionContract[];
+}
+
+export interface OptionGexResponse {
+  symbol: string;
+  net_gex?: number;
+  total_call_gex?: number;
+  total_put_gex?: number;
+  zero_gamma_level?: number;
+  major_positive_levels?: Array<{ strike: number; gex: number }>;
+  major_negative_levels?: Array<{ strike: number; gex: number }>;
+  updated_at?: string;
+}
+
+export interface OptionSummaryResponse {
+  total_volume?: number;
+  total_open_interest?: number;
+  put_call_ratio?: number;
+  most_active_symbols?: Array<{ symbol: string; volume: number }>;
+}
+
+export interface FearGreedData {
+  score: number;
+  rating: string;
+  timestamp: string | number;
+  previous_close?: number;
+  previous_1_week?: number;
+  previous_1_month?: number;
+  previous_1_year?: number;
+}
+
+export interface FearGreedHistoryResponse {
+  current: FearGreedData;
+  history: Array<{ score: number; rating: string; timestamp: string | number }>;
+}
+
+export interface CotPositioning {
+  market_code: string;
+  market_name?: string;
+  report_date: string;
+  commercial_long?: number;
+  commercial_short?: number;
+  non_commercial_long?: number;
+  non_commercial_short?: number;
+  net_position?: number;
+}
+
+export interface CotReportResponse {
+  symbol?: string;
+  market_code?: string;
+  reports: CotPositioning[];
+}
+
+export interface CentralBankStanceResponse {
+  bank: string;
+  name?: string;
+  stance: "hawkish" | "dovish" | "neutral" | string;
+  rate?: number;
+  last_updated?: string;
+  summary?: string;
+}

@@ -38,6 +38,7 @@ class TestHttpTransport(unittest.TestCase):
 
         res = transport.request("/api/v1/test")
         self.assertEqual(res["status"], "ok")
+        self.assertEqual(captured_headers["authorization"], "Bearer wi_live_secretkey")
         self.assertEqual(captured_headers["x-api-key"], "wi_live_secretkey")
         self.assertEqual(captured_headers["x-app-env"], "prod")
         self.assertIn("pia-sdk-py", captured_headers["user-agent"])

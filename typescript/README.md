@@ -9,7 +9,9 @@ Designed for institutional algorithmic traders, fintech dashboards, and quantita
 ## Features
 
 - **Zero-Fuss Sensible Defaults**: Connect in 3 lines of code with pre-configured endpoints and sensible timeout/retry defaults.
+- **Dual Proxy-Resilient Auth**: Transparently sends both standard `Authorization: Bearer <key>` and `x-api-key` headers to guarantee 100% compatibility across Cloudflare tunnels, WAFs, and internal gateways.
 - **Typed Error Hierarchy**: Clear, actionable, strongly-typed errors (`AuthenticationError`, `RateLimitError`, `TimeoutError`, `ValidationError`, `NetworkError`).
+- **Derivatives & Macro Intelligence**: Real-time Options Chain, Gamma Exposure (GEX), Fear & Greed Index, and CFTC Commitment of Traders (COT) positioning.
 - **Zero Sensitive Data Leaks**: Automatic redaction of API keys, bearer tokens, and secrets from error logs and stack traces.
 - **Cross-Platform Realtime Streaming**: Built-in resilient WebSocket client with **In-Band Message Authentication**, ping/pong keep-alives, and automatic re-subscription on reconnect.
 - **Rate Limit Telemetry**: Real-time inspection of RFC 6585 and daily quota headers (`X-RateLimit-*`, `X-DailyQuota-*`).
@@ -40,7 +42,7 @@ import { PiaClient, RateLimitError, AuthenticationError } from "@piaa/sdk";
 
 // Automatically picks up process.env.PIA_API_KEY if omitted
 const client = new PiaClient({
-  apiKey: "wi_live_your_api_key",
+  apiKey: "wi_live_...",
 });
 
 async function run() {
@@ -59,7 +61,22 @@ async function run() {
     });
     console.log(`Fetched ${candles.count} bars for ${candles.symbol}`);
 
-    // 3. Inspect rate limit telemetry
+    // 3. Options Chain & Gamma Exposure (GEX)
+    const gex = await client.options.getGex("SPX");
+    console.log(`SPX Net GEX: $${gex.net_gex?.toLocaleString()} (0-Gamma: ${gex.zero_gamma_level})`);
+
+    // 4. Macro Sentiment & Positioning (Fear & Greed, COT)
+    const fg = await client.macro.getFearGreed();
+    console.log(`Fear & Greed Index: ${fg.score} (${fg.rating})`);
+
+    const cot = await client.macro.getCot("GOLD");
+    console.log(`Gold Commercial Net: ${cot.reports[0]?.net_position}`);
+
+    // 5. Social Discussions & Breaking News
+    const posts = await client.social.getPosts({ limit: 10, symbol: "BTC" });
+    console.log(`Latest post by @${posts.items[0]?.author_username}: "${posts.items[0]?.text}"`);
+
+    // 6. Inspect rate limit telemetry
     const quota = client.getRateLimitInfo();
     console.log(`Remaining daily hits: ${quota.dailyRemaining}/${quota.dailyLimit}`);
   } catch (err) {
@@ -80,7 +97,7 @@ run();
 
 ### 2. Realtime WebSocket Streaming (In-Band Message Auth)
 
-Cross-platform streaming without query-string leakage:
+Cross-platform streaming without query-string token leakage:
 
 ```typescript
 import { PiaClient } from "@piaa/sdk";
@@ -116,6 +133,22 @@ client.realtime.connect();
 // To stop and prevent auto-reconnection:
 // client.realtime.disconnect();
 ```
+
+---
+
+## Complete Resource Reference
+
+| Resource | Methods | Endpoint | Description |
+|---|---|---|---|
+| `client.market` | `getPrices()`, `getCandles()`, `getOrderBook()` | `/api/v1/market/*` | Live price snapshot, ClickHouse OHLCV candles, and Level 2 DOM. |
+| `client.options` | `getChain()`, `getGex()`, `getSummary()` | `/api/v1/options/*` | Full options chain, Gamma Exposure levels, and put/call sentiment. |
+| `client.macro` | `getFearGreed()`, `getCot()`, `getCentralBankStance()` | `/api/v1/fear-greed`, `/api/v1/cot/*`, `/api/v1/central-banks/*` | Fear & Greed sentiment index, CFTC institutional COT reports, and central bank monetary policy stance. |
+| `client.social` | `getPosts()`, `getFeed()` | `/api/v1/social/*` | Real-time social sentiment and discussion feeds from Twitter/𝕏. |
+| `client.news` | `getNews()` | `/api/v1/news` | Curated multi-asset financial news headlines and articles. |
+| `client.economic` | `getCalendar()` | `/api/v1/economic/calendar` | Global economic calendar events, CPI releases, and rate decisions. |
+| `client.fixedIncome` | `getYieldCurve()` | `/api/v1/rates/yield-curve` | Benchmark sovereign bond yield curves across tenors. |
+| `client.ws` | `createTicket()` | `/api/v1/ws/ticket` | Ephemeral single-use WebSocket connection tickets. |
+| `client.realtime` | `connect()`, `subscribe()`, `unsubscribe()`, `disconnect()` | `/api/v1/ws` | Low-latency streaming socket client with event emitters. |
 
 ---
 

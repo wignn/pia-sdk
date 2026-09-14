@@ -32,6 +32,7 @@ describe("HttpTransport - Resiliency, Retries, and Telemetry", () => {
     const result = await transport.request<{ status: string }>("/api/v1/test");
 
     expect(result.status).toBe("ok");
+    expect(capturedHeaders["Authorization"]).toBe("Bearer wi_live_custom_key");
     expect(capturedHeaders["x-api-key"]).toBe("wi_live_custom_key");
     expect(capturedHeaders["User-Agent"]).toContain("pia-sdk-ts");
     expect(capturedHeaders["X-Custom-Env"]).toBe("staging");

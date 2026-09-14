@@ -19,10 +19,10 @@
 
 ## Polyglot Monorepo Structure
 
-| Package | Language | Registry | Directory | Status |
-|---|---|---|---|---|
-| **`@piaa/sdk`** | TypeScript / JavaScript | [npm](https://www.npmjs.com/package/@piaa/sdk) | [`/typescript`](./typescript) | ![npm](https://img.shields.io/npm/v/@piaa/sdk) |
-| **`piaa-sdk`** | Python (Sync & Async) | [PyPI](https://pypi.org/project/piaa-sdk/) | [`/python`](./python) | ![PyPI](https://img.shields.io/pypi/v/piaa-sdk) |
+| Package | Language | Version | Registry | Directory | Status |
+|---|---|---|---|---|---|
+| **`@piaa/sdk`** | TypeScript / JavaScript | **`1.2.0`** | [npm](https://www.npmjs.com/package/@piaa/sdk) | [`/typescript`](./typescript) | ![npm](https://img.shields.io/npm/v/@piaa/sdk) |
+| **`piaa-sdk`** | Python (Sync & Async) | **`1.2.0`** | [PyPI](https://pypi.org/project/piaa-sdk/) | [`/python`](./python) | ![PyPI](https://img.shields.io/pypi/v/piaa-sdk) |
 
 ---
 
@@ -31,7 +31,9 @@
 - **Unified API Gateway**: Clean routing for both REST and WebSocket under `api-engine.wign.dev`:
   - REST Base URL: `https://api-engine.wign.dev`
   - Realtime Stream: `wss://api-engine.wign.dev/api/v1/ws`
+- **Dual Proxy-Resilient Auth**: Transparently sends both standard `Authorization: Bearer <key>` and `x-api-key` headers to guarantee 100% compatibility across Cloudflare tunnels, enterprise WAFs, and internal gateways.
 - **In-Band Message Authentication**: Opens WebSocket connections cleanly without token query strings (preventing URL leakage in browser histories and proxy logs) and authenticates via an encrypted initial frame.
+- **Derivatives & Macro Intelligence**: Real-time Options Chain, Gamma Exposure (GEX), Fear & Greed Index, and CFTC Commitment of Traders (COT) institutional positioning.
 - **Enterprise-Grade Resiliency**: Automatic exponential backoff with full jitter on transient failures (`408`, `429`, `500`, `502`, `503`, `504`) and adherence to HTTP `Retry-After` headers.
 - **Real-time Quota Telemetry**: Native parsing of RFC 6585 and daily quota headers (`X-RateLimit-*`, `X-DailyQuota-*`).
 - **Typed Exception Hierarchy**: Actionable, structured error classes (`AuthenticationError`, `RateLimitError`, `TimeoutError`, `ValidationError`, `PermissionError`).
@@ -60,7 +62,15 @@ const client = new PiaClient({ apiKey: "wi_live_..." });
 const prices = await client.market.getPrices();
 console.log(`Tracked instruments: ${prices.total}`);
 
-// 2. Realtime WebSocket Streaming (In-Band Message Auth)
+// 2. Options Gamma Exposure (GEX)
+const gex = await client.options.getGex("SPX");
+console.log(`SPX Net GEX: $${gex.net_gex?.toLocaleString()}`);
+
+// 3. Macro Fear & Greed Index
+const fg = await client.macro.getFearGreed();
+console.log(`Fear & Greed: ${fg.score} (${fg.rating})`);
+
+// 4. Realtime WebSocket Streaming (In-Band Message Auth)
 client.realtime.on("authenticated", () => {
   client.realtime.subscribe(["XAUUSD", "BTCUSDT"]);
 });
@@ -97,8 +107,16 @@ for item in prices.items[:5]:
     print(f"[{item.symbol}] ${item.price} (bid: {item.bid}, ask: {item.ask})")
 
 # 2. Fetch historical candlestick bars from ClickHouse
-candles = client.market.get_candles("XAUUSD", timeframe="1m", limit=10)
+candles = client.market.get_candles("XAUUSD", timeframe="1h", limit=100)
 print(f"Fetched {candles.count} candles for {candles.symbol}")
+
+# 3. Options Chain & GEX
+gex = client.options.get_gex("SPX")
+print(f"SPX Net GEX: ${gex.net_gex:,.2f}")
+
+# 4. Macro Sentiment & COT Positioning
+cot = client.macro.get_cot("GOLD")
+print(f"Gold Commercial Net Position: {cot.reports[0].net_position}")
 ```
 
 ### Asynchronous Realtime Streaming

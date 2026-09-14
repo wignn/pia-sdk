@@ -10,6 +10,8 @@ import { NewsResource } from "./resources/news";
 import { SocialResource } from "./resources/social";
 import { EconomicResource } from "./resources/economic";
 import { FixedIncomeResource } from "./resources/fixed-income";
+import { MacroResource } from "./resources/macro";
+import { OptionsResource } from "./resources/options";
 import { WsResource } from "./resources/ws";
 import type { RateLimitInfo } from "./types";
 
@@ -21,6 +23,16 @@ export class PiaClient {
    * Market data & prices API resource.
    */
   public readonly market: MarketResource;
+
+  /**
+   * Derivatives, options chain, and Gamma Exposure (GEX) resource.
+   */
+  public readonly options: OptionsResource;
+
+  /**
+   * Macro indicators, Fear & Greed index, COT positioning, and central banks.
+   */
+  public readonly macro: MacroResource;
 
   /**
    * Social sentiment and discussions resource.
@@ -63,17 +75,19 @@ export class PiaClient {
    * const prices = await client.market.getPrices();
    * ```
    */
-  constructor(options: PiaClientOptions = {}) {
-    this.config = Object.freeze(resolveConfig(options));
-    this.transport = new HttpTransport(this.config as ResolvedPiaConfig);
+  constructor(options?: PiaClientOptions) {
+    this.config = resolveConfig(options);
+    this.transport = new HttpTransport(this.config);
 
     this.market = new MarketResource(this.transport);
+    this.options = new OptionsResource(this.transport);
+    this.macro = new MacroResource(this.transport);
     this.social = new SocialResource(this.transport);
     this.news = new NewsResource(this.transport);
     this.economic = new EconomicResource(this.transport);
     this.fixedIncome = new FixedIncomeResource(this.transport);
     this.ws = new WsResource(this.transport);
-    this.realtime = new RealtimeClient(this.config as ResolvedPiaConfig);
+    this.realtime = new RealtimeClient(this.config);
   }
 
   /**

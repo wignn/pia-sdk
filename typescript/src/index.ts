@@ -49,6 +49,18 @@ export {
   type SocialPost,
   type SocialFeedResponse,
   type GetSocialOptions,
+  type SocialPostItem,
+  type SocialPostsResponse,
+  type GetSocialPostsOptions,
+  type OptionContract,
+  type OptionChainResponse,
+  type OptionGexResponse,
+  type OptionSummaryResponse,
+  type FearGreedData,
+  type FearGreedHistoryResponse,
+  type CotPositioning,
+  type CotReportResponse,
+  type CentralBankStanceResponse,
   type NewsArticle,
   type NewsFeedResponse,
   type GetNewsOptions,
@@ -61,5 +73,13 @@ export {
   type WsTicketResponse,
 } from "./types";
 
+export { MarketResource } from "./resources/market";
+export { OptionsResource } from "./resources/options";
+export { MacroResource } from "./resources/macro";
+export { SocialResource } from "./resources/social";
+export { NewsResource } from "./resources/news";
+export { EconomicResource } from "./resources/economic";
+export { FixedIncomeResource } from "./resources/fixed-income";
+export { WsResource } from "./resources/ws";
 export { RealtimeClient, type SocketState } from "./realtime/socket";
 export { type RealtimeEvents } from "./realtime/events";

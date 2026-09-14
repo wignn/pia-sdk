@@ -15,7 +15,7 @@ import {
 import type { RateLimitInfo, RequestOptions } from "../types";
 
 const RETRYABLE_STATUS_CODES = new Set([408, 429, 500, 502, 503, 504]);
-const SDK_VERSION = "1.0.2";
+const SDK_VERSION = "1.2.0";
 
 export class HttpTransport {
   private lastRateLimitInfo: RateLimitInfo = {};
@@ -76,6 +76,7 @@ export class HttpTransport {
 
       try {
         const headers: Record<string, string> = {
+          Authorization: `Bearer ${this.config.apiKey}`,
           "x-api-key": this.config.apiKey,
           Accept: "application/json",
           "User-Agent": `pia-sdk-ts/${SDK_VERSION}`,

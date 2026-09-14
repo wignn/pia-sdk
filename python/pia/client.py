@@ -12,8 +12,10 @@ from .logger import setup_logger
 from .realtime import AsyncRealtimeClient, RealtimeClient
 from .resources.economic import AsyncEconomicResource, EconomicResource
 from .resources.fixed_income import AsyncFixedIncomeResource, FixedIncomeResource
+from .resources.macro import AsyncMacroResource, MacroResource
 from .resources.market import AsyncMarketResource, MarketResource
 from .resources.news import AsyncNewsResource, NewsResource
+from .resources.options import AsyncOptionsResource, OptionsResource
 from .resources.social import AsyncSocialResource, SocialResource
 from .resources.ws import AsyncWsResource, WsResource
 from .transport import AsyncTransport, SyncTransport
@@ -62,6 +64,8 @@ class PiaClient:
         self._transport = SyncTransport(self.config, client=http_client, logger=self.logger)
 
         self.market = MarketResource(self._transport)
+        self.options = OptionsResource(self._transport)
+        self.macro = MacroResource(self._transport)
         self.social = SocialResource(self._transport)
         self.news = NewsResource(self._transport)
         self.economic = EconomicResource(self._transport)
@@ -129,6 +133,8 @@ class AsyncPiaClient:
         self._transport = AsyncTransport(self.config, client=http_client, logger=self.logger)
 
         self.market = AsyncMarketResource(self._transport)
+        self.options = AsyncOptionsResource(self._transport)
+        self.macro = AsyncMacroResource(self._transport)
         self.social = AsyncSocialResource(self._transport)
         self.news = AsyncNewsResource(self._transport)
         self.economic = AsyncEconomicResource(self._transport)
