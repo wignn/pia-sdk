@@ -36,4 +36,28 @@ export class EconomicResource {
       options
     );
   }
+
+  /**
+   * Retrieves list of available macroeconomic indicator categories.
+   */
+  public async getCategories(options?: RequestOptions): Promise<any> {
+    return this.transport.request<any>(
+      "/api/v1/economic/categories",
+      "GET",
+      undefined,
+      options
+    );
+  }
+
+  /**
+   * Retrieves list of supported sovereign countries for economic indicators.
+   */
+  public async getCountries(options?: RequestOptions): Promise<any> {
+    return this.transport.request<any>(
+      "/api/v1/economic/countries",
+      "GET",
+      undefined,
+      options
+    );
+  }
 }

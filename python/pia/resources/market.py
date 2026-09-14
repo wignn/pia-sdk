@@ -63,6 +63,28 @@ class MarketResource:
         endpoint = f"/api/v1/market/insights/{quote(clean_symbol)}"
         return self._transport.request(endpoint, method="GET")
 
+    def get_trading_halts(self) -> Dict[str, Any]:
+        """Retrieves active market trading halts and circuit breaker triggers."""
+        return self._transport.request("/api/v1/market/trading-halts", method="GET")
+
+    def get_corporate_actions(self) -> Dict[str, Any]:
+        """Retrieves corporate actions (dividends, stock splits, earnings)."""
+        return self._transport.request("/api/v1/market/corporate-actions", method="GET")
+
+    def get_realized_volatility(self, symbol: Optional[str] = None) -> Dict[str, Any]:
+        """Calculates historical realized volatility (HV) across rolling windows."""
+        params: Dict[str, Any] = {}
+        if symbol:
+            params["symbol"] = symbol.strip().upper()
+        return self._transport.request("/api/v1/market/realized-volatility", method="GET", params=params)
+
+    def get_implied_volatility(self, symbol: Optional[str] = None) -> Dict[str, Any]:
+        """Retrieves implied volatility (IV) surface and ATM volatility index."""
+        params: Dict[str, Any] = {}
+        if symbol:
+            params["symbol"] = symbol.strip().upper()
+        return self._transport.request("/api/v1/market/implied-volatility", method="GET", params=params)
+
     def get_why(self, symbol: str) -> Dict[str, Any]:
         """Deprecated alias for `get_insights`."""
         return self.get_insights(symbol)
@@ -114,6 +136,28 @@ class AsyncMarketResource:
         clean_symbol = _validate_symbol(symbol)
         endpoint = f"/api/v1/market/insights/{quote(clean_symbol)}"
         return await self._transport.request(endpoint, method="GET")
+
+    async def get_trading_halts(self) -> Dict[str, Any]:
+        """Asynchronously retrieves active market trading halts and circuit breaker triggers."""
+        return await self._transport.request("/api/v1/market/trading-halts", method="GET")
+
+    async def get_corporate_actions(self) -> Dict[str, Any]:
+        """Asynchronously retrieves corporate actions (dividends, splits, earnings)."""
+        return await self._transport.request("/api/v1/market/corporate-actions", method="GET")
+
+    async def get_realized_volatility(self, symbol: Optional[str] = None) -> Dict[str, Any]:
+        """Asynchronously calculates historical realized volatility (HV)."""
+        params: Dict[str, Any] = {}
+        if symbol:
+            params["symbol"] = symbol.strip().upper()
+        return await self._transport.request("/api/v1/market/realized-volatility", method="GET", params=params)
+
+    async def get_implied_volatility(self, symbol: Optional[str] = None) -> Dict[str, Any]:
+        """Asynchronously retrieves implied volatility (IV) surface."""
+        params: Dict[str, Any] = {}
+        if symbol:
+            params["symbol"] = symbol.strip().upper()
+        return await self._transport.request("/api/v1/market/implied-volatility", method="GET", params=params)
 
     async def get_why(self, symbol: str) -> Dict[str, Any]:
         """Deprecated alias for `get_insights`."""

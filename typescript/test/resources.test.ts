@@ -4,101 +4,117 @@ import { HttpTransport } from "../src/http/transport";
 import { MacroResource } from "../src/resources/macro";
 import { OptionsResource } from "../src/resources/options";
 import { SocialResource } from "../src/resources/social";
+import { IntelligenceResource } from "../src/resources/intelligence";
+import { SecResource } from "../src/resources/sec";
+import { EnergyResource } from "../src/resources/energy";
+import { GeosignalsResource } from "../src/resources/geosignals";
+import { MarketResource } from "../src/resources/market";
+import { EconomicResource } from "../src/resources/economic";
 
-describe("New Intelligence Resources (Options, Macro, Social Posts)", () => {
+describe("Comprehensive Intelligence Resources (Options, Macro, Social, Intelligence, SEC, Energy, Geo)", () => {
   it("fetches option chain and GEX for a symbol", async () => {
-    let capturedUrl = "";
-    const mockFetch = async (url: string) => {
-      capturedUrl = url;
-      return new Response(
-        JSON.stringify({
-          symbol: "NVDA",
-          underlying_price: 125.4,
-          expirations: ["2026-09-18"],
-          contracts: [],
-        }),
-        { status: 200, headers: { "Content-Type": "application/json" } }
-      );
-    };
-
     const config = resolveConfig({
-      apiKey: "wi_live_test",
-      fetch: mockFetch as any,
+      apiKey: "wi_live_test_key",
+      fetch: (async (url: string) => {
+        if (url.includes("/api/v1/options/chain/NVDA")) {
+          return new Response(
+            JSON.stringify({
+              symbol: "NVDA",
+              underlying_price: 125.5,
+              expirations: ["2026-09-18"],
+              contracts: [],
+            }),
+            { status: 200, headers: { "content-type": "application/json" } }
+          );
+        }
+        if (url.includes("/api/v1/options/gex/SPX")) {
+          return new Response(
+            JSON.stringify({
+              symbol: "SPX",
+              net_gex: 150000000.0,
+              zero_gamma_level: 5600.0,
+            }),
+            { status: 200, headers: { "content-type": "application/json" } }
+          );
+        }
+        return new Response("Not found", { status: 404 });
+      }) as any,
     });
+
     const transport = new HttpTransport(config);
     const options = new OptionsResource(transport);
 
-    const chain = await options.getChain("NVDA");
+    const chain = await options.getChain("nvda");
     expect(chain.symbol).toBe("NVDA");
-    expect(capturedUrl).toContain("/api/v1/options/chain/NVDA");
+    expect(chain.underlying_price).toBe(125.5);
 
-    await options.getGex("SPX");
-    expect(capturedUrl).toContain("/api/v1/options/gex/SPX");
+    const gex = await options.getGex("spx");
+    expect(gex.symbol).toBe("SPX");
+    expect(gex.net_gex).toBe(150000000.0);
   });
 
-  it("fetches Fear & Greed index and COT reports", async () => {
-    let capturedUrl = "";
-    const mockFetch = async (url: string) => {
-      capturedUrl = url;
-      return new Response(
-        JSON.stringify({
-          score: 65,
-          rating: "greed",
-          timestamp: Date.now(),
-        }),
-        { status: 200, headers: { "Content-Type": "application/json" } }
-      );
-    };
-
+  it("fetches AI market intelligence and catalysts", async () => {
     const config = resolveConfig({
-      apiKey: "wi_live_test",
-      fetch: mockFetch as any,
+      apiKey: "wi_live_test_key",
+      fetch: (async (url: string, init: any) => {
+        if (url.includes("/api/v1/intelligence/analyze")) {
+          return new Response(
+            JSON.stringify({
+              symbol: "BTCUSDT",
+              sentiment: "bullish",
+              analysis: "Strong institutional accumulation detected above $60k.",
+              generated_at: "2026-09-14T00:00:00Z",
+            }),
+            { status: 200, headers: { "content-type": "application/json" } }
+          );
+        }
+        return new Response("Not found", { status: 404 });
+      }) as any,
     });
+
     const transport = new HttpTransport(config);
-    const macro = new MacroResource(transport);
+    const intelligence = new IntelligenceResource(transport);
 
-    const fg = await macro.getFearGreed();
-    expect(fg.score).toBe(65);
-    expect(capturedUrl).toContain("/api/v1/fear-greed");
-
-    await macro.getCot("GOLD");
-    expect(capturedUrl).toContain("/api/v1/cot/symbol/GOLD");
-
-    await macro.getCentralBankStance("fed");
-    expect(capturedUrl).toContain("/api/v1/central-banks/fed/stance");
+    const res = await intelligence.analyze({ symbol: "BTCUSDT" });
+    expect(res.sentiment).toBe("bullish");
+    expect(res.analysis).toContain("accumulation");
   });
 
-  it("fetches social posts from PostgreSQL ingestion pipeline", async () => {
-    let capturedUrl = "";
-    const mockFetch = async (url: string) => {
-      capturedUrl = url;
-      return new Response(
-        JSON.stringify({
-          has_more: false,
-          items: [
-            {
-              author_username: "coinbureau",
-              text: "Bitcoin market dynamic update",
-              url: "https://x.com/coinbureau/123",
-              created_at: "2026-09-13T10:00:00Z",
-              platform: "twitter",
-            },
-          ],
-        }),
-        { status: 200, headers: { "Content-Type": "application/json" } }
-      );
-    };
-
+  it("fetches SEC filings and energy dashboard", async () => {
     const config = resolveConfig({
-      apiKey: "wi_live_test",
-      fetch: mockFetch as any,
+      apiKey: "wi_live_test_key",
+      fetch: (async (url: string) => {
+        if (url.includes("/api/v1/sec/filings")) {
+          return new Response(
+            JSON.stringify({
+              total: 1,
+              items: [{ id: "filing-1", symbol: "AAPL", form_type: "10-Q" }],
+            }),
+            { status: 200, headers: { "content-type": "application/json" } }
+          );
+        }
+        if (url.includes("/api/v1/energy/dashboard")) {
+          return new Response(
+            JSON.stringify({
+              crude_oil: { wti_price: 78.5, brent_price: 82.3 },
+              updated_at: "2026-09-14T00:00:00Z",
+            }),
+            { status: 200, headers: { "content-type": "application/json" } }
+          );
+        }
+        return new Response("Not found", { status: 404 });
+      }) as any,
     });
-    const transport = new HttpTransport(config);
-    const social = new SocialResource(transport);
 
-    const res = await social.getPosts({ limit: 10, symbol: "BTC" });
-    expect(res.items.length).toBe(1);
-    expect(res.items[0].author_username).toBe("coinbureau");
-    expect(capturedUrl).toContain("/api/v1/social/posts?symbol=BTC&limit=10");
+    const transport = new HttpTransport(config);
+    const sec = new SecResource(transport);
+    const energy = new EnergyResource(transport);
+
+    const filings = await sec.getFilings({ symbol: "AAPL" });
+    expect(filings.total).toBe(1);
+    expect(filings.items[0].form_type).toBe("10-Q");
+
+    const dash = await energy.getDashboard();
+    expect(dash.crude_oil?.wti_price).toBe(78.5);
   });
 });

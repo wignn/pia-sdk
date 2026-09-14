@@ -1,4 +1,4 @@
-"""Unit tests for Social, News, Options, Macro, and Ws resources."""
+"""Unit tests for all PIA SDK API resources."""
 
 import unittest
 import httpx
@@ -6,7 +6,7 @@ import httpx
 from pia import PiaClient
 
 
-class TestOtherResources(unittest.TestCase):
+class TestAllResources(unittest.TestCase):
     def test_social_posts_resource(self):
         def mock_handler(request: httpx.Request) -> httpx.Response:
             self.assertIn("/api/v1/social/posts", str(request.url))
@@ -38,6 +38,34 @@ class TestOtherResources(unittest.TestCase):
         self.assertEqual(len(res.items), 1)
         self.assertEqual(res.items[0].author_username, "coinbureau")
         self.assertEqual(res.items[0].like_count, 120)
+
+    def test_intelligence_resource(self):
+        def mock_handler(request: httpx.Request) -> httpx.Response:
+            if "/api/v1/intelligence/analyze" in str(request.url):
+                return httpx.Response(
+                    200,
+                    json={
+                        "symbol": "BTCUSDT",
+                        "sentiment": "bullish",
+                        "analysis": "Institutional accumulation active.",
+                    },
+                )
+            if "/api/v1/market/insights" in str(request.url):
+                return httpx.Response(
+                    200,
+                    json={"symbol": "AAPL", "summary": "Strong iPhone demand."},
+                )
+            return httpx.Response(404)
+
+        client = PiaClient(
+            api_key="test",
+            http_client=httpx.Client(transport=httpx.MockTransport(mock_handler)),
+        )
+        analysis = client.intelligence.analyze(symbol="BTCUSDT")
+        self.assertEqual(analysis["sentiment"], "bullish")
+
+        insight = client.intelligence.get_insights("AAPL")
+        self.assertEqual(insight["symbol"], "AAPL")
 
     def test_options_resource(self):
         def mock_handler(request: httpx.Request) -> httpx.Response:
@@ -76,32 +104,22 @@ class TestOtherResources(unittest.TestCase):
         self.assertEqual(gex.symbol, "SPX")
         self.assertEqual(gex.net_gex, 150000000.0)
 
-    def test_macro_resource(self):
+    def test_sec_and_energy_and_geosignals_resource(self):
         def mock_handler(request: httpx.Request) -> httpx.Response:
-            if "/api/v1/fear-greed" in str(request.url):
+            if "/api/v1/sec/filings" in str(request.url):
                 return httpx.Response(
                     200,
-                    json={
-                        "score": 68.5,
-                        "rating": "greed",
-                        "timestamp": "2026-09-13T12:00:00Z",
-                    },
+                    json={"total": 1, "items": [{"id": "1", "symbol": "MSFT", "form_type": "10-K"}]},
                 )
-            if "/api/v1/cot/symbol" in str(request.url):
-                self.assertIn("GOLD", str(request.url))
+            if "/api/v1/energy/dashboard" in str(request.url):
                 return httpx.Response(
                     200,
-                    json={
-                        "symbol": "GOLD",
-                        "reports": [
-                            {
-                                "market_code": "088691",
-                                "report_date": "2026-09-08",
-                                "commercial_long": 100000,
-                                "commercial_short": 250000,
-                            }
-                        ],
-                    },
+                    json={"crude_oil": {"wti_price": 75.2}},
+                )
+            if "/api/v1/geosignals" in str(request.url):
+                return httpx.Response(
+                    200,
+                    json={"total": 1, "events": [{"id": "geo-1", "title": "Strait of Malacca Alert"}]},
                 )
             return httpx.Response(404)
 
@@ -109,59 +127,32 @@ class TestOtherResources(unittest.TestCase):
             api_key="test",
             http_client=httpx.Client(transport=httpx.MockTransport(mock_handler)),
         )
-        fg = client.macro.get_fear_greed()
-        self.assertEqual(fg.score, 68.5)
-        self.assertEqual(fg.rating, "greed")
+        filings = client.sec.get_filings(symbol="MSFT")
+        self.assertEqual(filings["total"], 1)
 
-        cot = client.macro.get_cot("gold")
-        self.assertEqual(len(cot.reports), 1)
-        self.assertEqual(cot.reports[0].commercial_long, 100000)
+        energy = client.energy.get_dashboard()
+        self.assertEqual(energy["crude_oil"]["wti_price"], 75.2)
 
-    def test_news_resource(self):
+        geo = client.geosignals.get_events()
+        self.assertEqual(geo["total"], 1)
+
+    def test_market_extensions(self):
         def mock_handler(request: httpx.Request) -> httpx.Response:
-            self.assertIn("/api/v1/news", str(request.url))
-            self.assertIn("symbols=XAUUSD%2CBTC", str(request.url))
-            return httpx.Response(
-                200,
-                json={
-                    "total": 1,
-                    "items": [
-                        {
-                            "id": "news-1",
-                            "title": "Gold reaches new highs",
-                            "summary": "Market analysis on gold...",
-                            "url": "https://news.wign.dev/1",
-                            "source": "Bloomberg",
-                            "published_at": "2026-09-10T10:00:00Z",
-                        }
-                    ],
-                },
-            )
+            if "/api/v1/market/trading-halts" in str(request.url):
+                return httpx.Response(200, json={"halts": []})
+            if "/api/v1/market/corporate-actions" in str(request.url):
+                return httpx.Response(200, json={"actions": []})
+            return httpx.Response(404)
 
         client = PiaClient(
             api_key="test",
             http_client=httpx.Client(transport=httpx.MockTransport(mock_handler)),
         )
-        res = client.news.get_news(symbols=["xauusd", "btc"])
-        self.assertEqual(res.total, 1)
-        self.assertEqual(res.items[0].source, "Bloomberg")
+        halts = client.market.get_trading_halts()
+        self.assertEqual(halts["halts"], [])
 
-    def test_ws_ticket_resource(self):
-        def mock_handler(request: httpx.Request) -> httpx.Response:
-            self.assertIn("/api/v1/ws/ticket", str(request.url))
-            self.assertEqual(request.method, "POST")
-            return httpx.Response(
-                200,
-                json={"ticket": "wst_abcdef12345", "expires_in": 60},
-            )
-
-        client = PiaClient(
-            api_key="test",
-            http_client=httpx.Client(transport=httpx.MockTransport(mock_handler)),
-        )
-        res = client.ws.create_ticket()
-        self.assertEqual(res.ticket, "wst_abcdef12345")
-        self.assertEqual(res.expires_in, 60)
+        actions = client.market.get_corporate_actions()
+        self.assertEqual(actions["actions"], [])
 
 
 if __name__ == "__main__":

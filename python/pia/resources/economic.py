@@ -32,6 +32,14 @@ class EconomicResource:
         """Retrieves macroeconomic indicators and series metadata."""
         return self._transport.request("/api/v1/economic/indicators", method="GET")
 
+    def get_categories(self) -> Dict[str, Any]:
+        """Retrieves list of available macroeconomic indicator categories."""
+        return self._transport.request("/api/v1/economic/categories", method="GET")
+
+    def get_countries(self) -> Dict[str, Any]:
+        """Retrieves list of supported sovereign countries for economic indicators."""
+        return self._transport.request("/api/v1/economic/countries", method="GET")
+
 
 class AsyncEconomicResource:
     """Asynchronous Economic API resource."""
@@ -55,5 +63,13 @@ class AsyncEconomicResource:
         return await self._transport.request("/api/v1/economic/calendar", method="GET", params=params)
 
     async def get_indicators(self) -> Dict[str, Any]:
-        """Retrieves macroeconomic indicators and series metadata."""
+        """Asynchronously retrieves macroeconomic indicators and series metadata."""
         return await self._transport.request("/api/v1/economic/indicators", method="GET")
+
+    async def get_categories(self) -> Dict[str, Any]:
+        """Asynchronously retrieves list of available macroeconomic indicator categories."""
+        return await self._transport.request("/api/v1/economic/categories", method="GET")
+
+    async def get_countries(self) -> Dict[str, Any]:
+        """Asynchronously retrieves list of supported sovereign countries."""
+        return await self._transport.request("/api/v1/economic/countries", method="GET")

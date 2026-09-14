@@ -100,6 +100,60 @@ export class MarketResource {
   }
 
   /**
+   * Retrieves active market trading halts and circuit breaker triggers.
+   */
+  public async getTradingHalts(options?: RequestOptions): Promise<any> {
+    return this.transport.request<any>(
+      "/api/v1/market/trading-halts",
+      "GET",
+      undefined,
+      options
+    );
+  }
+
+  /**
+   * Retrieves upcoming and historical corporate actions (dividends, splits, earnings).
+   */
+  public async getCorporateActions(options?: RequestOptions): Promise<any> {
+    return this.transport.request<any>(
+      "/api/v1/market/corporate-actions",
+      "GET",
+      undefined,
+      options
+    );
+  }
+
+  /**
+   * Calculates historical realized volatility (HV) across rolling windows (10d, 30d, 90d).
+   */
+  public async getRealizedVolatility(symbol?: string, options?: RequestOptions): Promise<any> {
+    const params = new URLSearchParams();
+    if (symbol) params.set("symbol", symbol.trim().toUpperCase());
+    const query = params.toString() ? `?${params.toString()}` : "";
+    return this.transport.request<any>(
+      `/api/v1/market/realized-volatility${query}`,
+      "GET",
+      undefined,
+      options
+    );
+  }
+
+  /**
+   * Retrieves implied volatility (IV) surface and ATM volatility index.
+   */
+  public async getImpliedVolatility(symbol?: string, options?: RequestOptions): Promise<any> {
+    const params = new URLSearchParams();
+    if (symbol) params.set("symbol", symbol.trim().toUpperCase());
+    const query = params.toString() ? `?${params.toString()}` : "";
+    return this.transport.request<any>(
+      `/api/v1/market/implied-volatility${query}`,
+      "GET",
+      undefined,
+      options
+    );
+  }
+
+  /**
    * @deprecated Use `getInsights(symbol)` instead.
    */
   public async getWhy(symbol: string, options?: RequestOptions): Promise<any> {

@@ -185,6 +185,10 @@ class AsyncRealtimeClient:
         if self._ws:
             await self._ws.close()
 
+    async def disconnect(self) -> None:
+        """Alias for `close()`."""
+        await self.close()
+
 
 class RealtimeClient:
     """Threaded/Callback Realtime client for synchronous applications."""
@@ -225,6 +229,10 @@ class RealtimeClient:
         if self._thread:
             self._thread.join(timeout=2.0)
             self._thread = None
+
+    def disconnect(self) -> None:
+        """Alias for `stop()`."""
+        self.stop()
 
     def run_forever(self) -> None:
         """Blocks the current thread and runs the WebSocket listener."""

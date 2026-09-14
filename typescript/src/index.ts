@@ -8,15 +8,9 @@ export {
   type PiaClientOptions,
   type ResolvedPiaConfig,
   resolveConfig,
-  DEFAULT_BASE_URL,
-  DEFAULT_WS_URL,
-  DEFAULT_TIMEOUT_MS,
-  DEFAULT_MAX_RETRIES,
 } from "./config";
-
 export {
   PiaError,
-  type PiaErrorDetails,
   ConfigurationError,
   ValidationError,
   AuthenticationError,
@@ -26,15 +20,8 @@ export {
   NetworkError,
   ParseError,
   ApiError,
-} from "./errors";
-
-export {
-  type PiaLogger,
-  type LogLevel,
-  DefaultLogger,
   redactSensitive,
-} from "./logger";
-
+} from "./errors";
 export {
   type Timeframe,
   type RateLimitInfo,
@@ -48,10 +35,19 @@ export {
   type OrderBookLevel,
   type SocialPost,
   type SocialFeedResponse,
-  type GetSocialOptions,
   type SocialPostItem,
   type SocialPostsResponse,
   type GetSocialPostsOptions,
+  type GetSocialOptions,
+  type NewsArticle,
+  type NewsFeedResponse,
+  type GetNewsOptions,
+  type EconomicEvent,
+  type EconomicCalendarResponse,
+  type GetCalendarOptions,
+  type YieldCurvePoint,
+  type YieldCurveResponse,
+  type WsTicketResponse,
   type OptionContract,
   type OptionChainResponse,
   type OptionGexResponse,
@@ -61,25 +57,23 @@ export {
   type CotPositioning,
   type CotReportResponse,
   type CentralBankStanceResponse,
-  type NewsArticle,
-  type NewsFeedResponse,
-  type GetNewsOptions,
-  type EconomicEvent,
-  type EconomicCalendarResponse,
-  type GetCalendarOptions,
-  type YieldCurvePoint,
-  type YieldCurveResponse,
-  type MarketInsight,
-  type WsTicketResponse,
 } from "./types";
-
+export {
+  RealtimeClient,
+  type SocketState,
+} from "./realtime/socket";
+export {
+  type RealtimeEvents,
+} from "./realtime/events";
 export { MarketResource } from "./resources/market";
+export { IntelligenceResource, type IntelligenceAnalyzeRequest, type IntelligenceAnalyzeResponse, type MarketInsightResponse } from "./resources/intelligence";
 export { OptionsResource } from "./resources/options";
 export { MacroResource } from "./resources/macro";
+export { GeosignalsResource, type GeoSignalEvent, type GeoSignalsResponse, type GeoSignalsMapResponse, type GeoSignalsAssetImpactResponse } from "./resources/geosignals";
+export { EnergyResource, type EnergyDashboardResponse, type EnergySeriesResponse } from "./resources/energy";
+export { SecResource, type SecFilingItem, type SecFilingsResponse, type GetSecFilingsOptions } from "./resources/sec";
 export { SocialResource } from "./resources/social";
 export { NewsResource } from "./resources/news";
 export { EconomicResource } from "./resources/economic";
 export { FixedIncomeResource } from "./resources/fixed-income";
 export { WsResource } from "./resources/ws";
-export { RealtimeClient, type SocketState } from "./realtime/socket";
-export { type RealtimeEvents } from "./realtime/events";

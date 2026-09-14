@@ -27,19 +27,27 @@ from .errors import (
 from .realtime import AsyncRealtimeClient, RealtimeClient
 from .resources import (
     AsyncEconomicResource,
+    AsyncEnergyResource,
     AsyncFixedIncomeResource,
+    AsyncGeosignalsResource,
+    AsyncIntelligenceResource,
     AsyncMacroResource,
     AsyncMarketResource,
     AsyncNewsResource,
     AsyncOptionsResource,
+    AsyncSecResource,
     AsyncSocialResource,
     AsyncWsResource,
     EconomicResource,
+    EnergyResource,
     FixedIncomeResource,
+    GeosignalsResource,
+    IntelligenceResource,
     MacroResource,
     MarketResource,
     NewsResource,
     OptionsResource,
+    SecResource,
     SocialResource,
     WsResource,
 )
@@ -69,7 +77,7 @@ from .types import (
     WsTicketResponse,
 )
 
-__version__ = "1.2.0"
+__version__ = "1.3.0"
 
 __all__ = [
     "PiaClient",
@@ -113,10 +121,18 @@ __all__ = [
     "WsTicketResponse",
     "MarketResource",
     "AsyncMarketResource",
+    "IntelligenceResource",
+    "AsyncIntelligenceResource",
     "OptionsResource",
     "AsyncOptionsResource",
     "MacroResource",
     "AsyncMacroResource",
+    "GeosignalsResource",
+    "AsyncGeosignalsResource",
+    "EnergyResource",
+    "AsyncEnergyResource",
+    "SecResource",
+    "AsyncSecResource",
     "SocialResource",
     "AsyncSocialResource",
     "NewsResource",

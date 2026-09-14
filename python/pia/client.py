@@ -11,11 +11,15 @@ from .config import PiaConfig
 from .logger import setup_logger
 from .realtime import AsyncRealtimeClient, RealtimeClient
 from .resources.economic import AsyncEconomicResource, EconomicResource
+from .resources.energy import AsyncEnergyResource, EnergyResource
 from .resources.fixed_income import AsyncFixedIncomeResource, FixedIncomeResource
+from .resources.geosignals import AsyncGeosignalsResource, GeosignalsResource
+from .resources.intelligence import AsyncIntelligenceResource, IntelligenceResource
 from .resources.macro import AsyncMacroResource, MacroResource
 from .resources.market import AsyncMarketResource, MarketResource
 from .resources.news import AsyncNewsResource, NewsResource
 from .resources.options import AsyncOptionsResource, OptionsResource
+from .resources.sec import AsyncSecResource, SecResource
 from .resources.social import AsyncSocialResource, SocialResource
 from .resources.ws import AsyncWsResource, WsResource
 from .transport import AsyncTransport, SyncTransport
@@ -23,18 +27,7 @@ from .types import RateLimitInfo
 
 
 class PiaClient:
-    """Official synchronous client for the PIA Financial & Market Intelligence Platform.
-
-    Example:
-    ```python
-    from pia import PiaClient
-
-    client = PiaClient(api_key="wi_live_...")
-    prices = client.market.get_prices()
-    for item in prices.items:
-        print(item.symbol, item.price)
-    ```
-    """
+    """Official synchronous client for the PIA Financial & Market Intelligence Platform."""
 
     def __init__(
         self,
@@ -64,8 +57,12 @@ class PiaClient:
         self._transport = SyncTransport(self.config, client=http_client, logger=self.logger)
 
         self.market = MarketResource(self._transport)
+        self.intelligence = IntelligenceResource(self._transport)
         self.options = OptionsResource(self._transport)
         self.macro = MacroResource(self._transport)
+        self.geosignals = GeosignalsResource(self._transport)
+        self.energy = EnergyResource(self._transport)
+        self.sec = SecResource(self._transport)
         self.social = SocialResource(self._transport)
         self.news = NewsResource(self._transport)
         self.economic = EconomicResource(self._transport)
@@ -74,12 +71,13 @@ class PiaClient:
         self.realtime = RealtimeClient(self.config, logger=self.logger)
 
     def get_rate_limit_info(self) -> RateLimitInfo:
-        """Returns the most recent rate limit and daily quota telemetry."""
+        """Retrieves rate limit and daily quota metrics from the most recent request."""
         return self._transport.get_rate_limit_info()
 
     def close(self) -> None:
+        """Closes the underlying HTTP client and disconnects WebSocket connections."""
+        self.realtime.disconnect()
         self._transport.close()
-        self.realtime.stop()
 
     def __enter__(self) -> PiaClient:
         return self
@@ -89,21 +87,7 @@ class PiaClient:
 
 
 class AsyncPiaClient:
-    """Official asynchronous client for the PIA Financial & Market Intelligence Platform.
-
-    Example:
-    ```python
-    import asyncio
-    from pia import AsyncPiaClient
-
-    async def main():
-        async with AsyncPiaClient(api_key="wi_live_...") as client:
-            prices = await client.market.get_prices()
-            print(f"Tracked assets: {prices.total}")
-
-    asyncio.run(main())
-    ```
-    """
+    """Official asynchronous client for the PIA Financial & Market Intelligence Platform."""
 
     def __init__(
         self,
@@ -133,8 +117,12 @@ class AsyncPiaClient:
         self._transport = AsyncTransport(self.config, client=http_client, logger=self.logger)
 
         self.market = AsyncMarketResource(self._transport)
+        self.intelligence = AsyncIntelligenceResource(self._transport)
         self.options = AsyncOptionsResource(self._transport)
         self.macro = AsyncMacroResource(self._transport)
+        self.geosignals = AsyncGeosignalsResource(self._transport)
+        self.energy = AsyncEnergyResource(self._transport)
+        self.sec = AsyncSecResource(self._transport)
         self.social = AsyncSocialResource(self._transport)
         self.news = AsyncNewsResource(self._transport)
         self.economic = AsyncEconomicResource(self._transport)
@@ -143,12 +131,13 @@ class AsyncPiaClient:
         self.realtime = AsyncRealtimeClient(self.config, logger=self.logger)
 
     def get_rate_limit_info(self) -> RateLimitInfo:
-        """Returns the most recent rate limit and daily quota telemetry."""
+        """Retrieves rate limit and daily quota metrics from the most recent request."""
         return self._transport.get_rate_limit_info()
 
     async def aclose(self) -> None:
+        """Asynchronously closes the HTTP client and WebSocket connections."""
+        await self.realtime.disconnect()
         await self._transport.aclose()
-        await self.realtime.close()
 
     async def __aenter__(self) -> AsyncPiaClient:
         return self

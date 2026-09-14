@@ -6,12 +6,16 @@ import { type PiaClientOptions, type ResolvedPiaConfig, resolveConfig } from "./
 import { HttpTransport } from "./http/transport";
 import { RealtimeClient } from "./realtime/socket";
 import { MarketResource } from "./resources/market";
-import { NewsResource } from "./resources/news";
+import { IntelligenceResource } from "./resources/intelligence";
+import { OptionsResource } from "./resources/options";
+import { MacroResource } from "./resources/macro";
+import { GeosignalsResource } from "./resources/geosignals";
+import { EnergyResource } from "./resources/energy";
+import { SecResource } from "./resources/sec";
 import { SocialResource } from "./resources/social";
+import { NewsResource } from "./resources/news";
 import { EconomicResource } from "./resources/economic";
 import { FixedIncomeResource } from "./resources/fixed-income";
-import { MacroResource } from "./resources/macro";
-import { OptionsResource } from "./resources/options";
 import { WsResource } from "./resources/ws";
 import type { RateLimitInfo } from "./types";
 
@@ -25,6 +29,11 @@ export class PiaClient {
   public readonly market: MarketResource;
 
   /**
+   * AI-powered quantitative intelligence and narrative catalysts resource.
+   */
+  public readonly intelligence: IntelligenceResource;
+
+  /**
    * Derivatives, options chain, and Gamma Exposure (GEX) resource.
    */
   public readonly options: OptionsResource;
@@ -33,6 +42,21 @@ export class PiaClient {
    * Macro indicators, Fear & Greed index, COT positioning, and central banks.
    */
   public readonly macro: MacroResource;
+
+  /**
+   * Geopolitical risk alerts, conflict mapping, and asset exposure resource.
+   */
+  public readonly geosignals: GeosignalsResource;
+
+  /**
+   * Energy benchmarks, crude spreads, and natural gas storage resource.
+   */
+  public readonly energy: EnergyResource;
+
+  /**
+   * SEC EDGAR corporate filings (10-K, 10-Q, 8-K, Form 4) resource.
+   */
+  public readonly sec: SecResource;
 
   /**
    * Social sentiment and discussions resource.
@@ -66,22 +90,18 @@ export class PiaClient {
 
   /**
    * Initializes a new PIA API Client.
-   *
-   * @example
-   * ```typescript
-   * import { PiaClient } from "@piaa/sdk";
-   *
-   * const client = new PiaClient({ apiKey: "wi_live_..." });
-   * const prices = await client.market.getPrices();
-   * ```
    */
   constructor(options?: PiaClientOptions) {
     this.config = resolveConfig(options);
     this.transport = new HttpTransport(this.config);
 
     this.market = new MarketResource(this.transport);
+    this.intelligence = new IntelligenceResource(this.transport);
     this.options = new OptionsResource(this.transport);
     this.macro = new MacroResource(this.transport);
+    this.geosignals = new GeosignalsResource(this.transport);
+    this.energy = new EnergyResource(this.transport);
+    this.sec = new SecResource(this.transport);
     this.social = new SocialResource(this.transport);
     this.news = new NewsResource(this.transport);
     this.economic = new EconomicResource(this.transport);

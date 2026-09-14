@@ -163,3 +163,16 @@ export class ApiError extends PiaError {
     this.rawBody = rawBody;
   }
 }
+
+/**
+ * Sanitizes and redacts API keys and secrets from string representations.
+ */
+export function redactSensitive(input: string): string {
+  if (!input || typeof input !== "string") return input;
+  return input
+    .replace(/wi_live_([a-zA-Z0-9_-]+)/g, (_match, p1) => {
+      if (p1.length <= 4) return "wi_live_***";
+      return `wi_live_***${p1.slice(-4)}`;
+    })
+    .replace(/Bearer\s+[a-zA-Z0-9._-]+/gi, "Bearer [REDACTED]");
+}
