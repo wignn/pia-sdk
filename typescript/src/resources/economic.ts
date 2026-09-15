@@ -41,12 +41,17 @@ export class EconomicResource {
     if (options?.limit) params.set("limit", String(options.limit));
 
     const query = params.toString() ? `?${params.toString()}` : "";
-    return this.transport.request<EconomicCalendarResponse>(
+    const raw = await this.transport.request<any>(
       `/api/v1/economic/calendar${query}`,
       "GET",
       undefined,
       options
     );
+    return {
+      total: raw?.total ?? (raw?.items || []).length,
+      events: raw?.events || raw?.items || [],
+      items: raw?.items,
+    };
   }
 
   /**

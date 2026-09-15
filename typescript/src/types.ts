@@ -76,6 +76,8 @@ export interface CandleResponse {
   timeframe: string;
   count: number;
   candles: Candle[];
+  has_more?: boolean;
+  next_before?: number | null;
 }
 
 export interface GetCandlesOptions extends RequestOptions {
@@ -143,20 +145,22 @@ export interface GetNewsOptions extends RequestOptions {
 
 export interface EconomicEvent {
   id?: string;
-  event: string;
+  title?: string;
+  event?: string;
   country: string;
   currency?: string;
   date: string;
   time?: string;
-  actual?: number | null;
-  forecast?: number | null;
-  previous?: number | null;
+  actual?: number | string | null;
+  forecast?: number | string | null;
+  previous?: number | string | null;
   impact?: "high" | "medium" | "low" | string;
 }
 
 export interface EconomicCalendarResponse {
   total: number;
   events: EconomicEvent[];
+  items?: EconomicEvent[];
 }
 
 export interface MacroMapCountryItem {
@@ -238,7 +242,11 @@ export interface SocialPostsResponse {
 export interface GetSocialPostsOptions extends RequestOptions {
   limit?: number;
   cursor?: string;
+  before?: string;
   symbol?: string;
+  platform?: string;
+  account?: string;
+  q?: string;
 }
 
 export interface OptionContract {

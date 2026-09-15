@@ -163,18 +163,22 @@ class EconomicEvent:
     actual: Optional[float] = None
     forecast: Optional[float] = None
     previous: Optional[float] = None
+    currency: Optional[str] = None
+    time: Optional[str] = None
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> EconomicEvent:
         return cls(
-            id=str(data.get("id", "")),
-            title=str(data.get("title", "")),
+            id=str(data.get("id", data.get("event_id", ""))),
+            title=str(data.get("title", data.get("event", ""))),
             country=str(data.get("country", "")),
             impact=str(data.get("impact", "")),
             date=str(data.get("date", "")),
-            actual=float(data["actual"]) if data.get("actual") is not None else None,
-            forecast=float(data["forecast"]) if data.get("forecast") is not None else None,
-            previous=float(data["previous"]) if data.get("previous") is not None else None,
+            actual=float(data["actual"]) if data.get("actual") not in (None, "") else None,
+            forecast=float(data["forecast"]) if data.get("forecast") not in (None, "") else None,
+            previous=float(data["previous"]) if data.get("previous") not in (None, "") else None,
+            currency=data.get("currency"),
+            time=data.get("time"),
         )
 
     def to_dict(self) -> Dict[str, Any]:

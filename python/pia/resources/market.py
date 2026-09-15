@@ -7,7 +7,7 @@ from urllib.parse import quote
 
 from ..errors import ValidationError
 from ..transport import AsyncTransport, SyncTransport
-from ..types import CandleResponse, MarketPricesResponse, OrderBook, SymbolItem, SymbolsResponse
+from ..types import CandleResponse, MarketPrice, MarketPricesResponse, OrderBook, SymbolItem, SymbolsResponse
 
 
 def _validate_symbol(symbol: str) -> str:
@@ -44,6 +44,29 @@ class MarketResource:
         """Retrieves a live price snapshot for all tracked global financial instruments."""
         data = self._transport.request("/api/v1/market/prices", method="GET")
         return MarketPricesResponse.from_dict(data)
+
+    def get_price(self, symbol: str) -> MarketPrice:
+        """Retrieves the latest quote for a single symbol."""
+        clean_symbol = _validate_symbol(symbol)
+        data = self._transport.request(f"/api/v1/market/prices/{quote(clean_symbol)}", method="GET")
+        return MarketPrice.from_dict(data)
+
+    def get_session(self, symbol: str) -> Dict[str, Any]:
+        """Retrieves current exchange session state for a symbol."""
+        clean_symbol = _validate_symbol(symbol)
+        return self._transport.request(f"/api/v1/market/session/{quote(clean_symbol)}", method="GET")
+
+    def get_data_quality(self) -> Dict[str, Any]:
+        return self._transport.request("/api/v1/market/data-quality", method="GET")
+
+    def get_spikes(self) -> Dict[str, Any]:
+        return self._transport.request("/api/v1/market/spikes", method="GET")
+
+    def get_alerts(self) -> Dict[str, Any]:
+        return self._transport.request("/api/v1/market/alerts", method="GET")
+
+    def get_smart_alerts(self) -> Dict[str, Any]:
+        return self._transport.request("/api/v1/market/smart-alerts", method="GET")
 
     def get_candles(
         self,

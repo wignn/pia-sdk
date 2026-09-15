@@ -20,9 +20,13 @@ export class SocialResource {
    */
   public async getPosts(options?: GetSocialPostsOptions): Promise<SocialPostsResponse> {
     const params = new URLSearchParams();
-    if (options?.symbol) params.set("symbol", options.symbol.trim().toUpperCase());
+    if (options?.symbol) params.set("q", options.symbol.trim().toUpperCase());
     if (options?.limit) params.set("limit", String(options.limit));
-    if (options?.cursor) params.set("cursor", options.cursor);
+    if (options?.cursor) params.set("before", options.cursor);
+    if (options?.before) params.set("before", options.before);
+    if (options?.platform) params.set("platform", options.platform);
+    if (options?.account) params.set("account", options.account);
+    if (options?.q) params.set("q", options.q);
 
     const query = params.toString() ? `?${params.toString()}` : "";
     return this.transport.request<SocialPostsResponse>(

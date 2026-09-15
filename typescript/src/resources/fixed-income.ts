@@ -31,4 +31,26 @@ export class FixedIncomeResource {
       options
     );
   }
+
+  /** Retrieves the current sovereign rate for a tenor such as 2Y or 10Y. */
+  public async getRate(tenor: string, options?: RequestOptions): Promise<any> {
+    if (!tenor || !tenor.trim()) throw new Error("Tenor must be a non-empty string.");
+    return this.transport.request<any>(
+      `/api/v1/fixed-income/rates/${encodeURIComponent(tenor.trim().toUpperCase())}`,
+      "GET",
+      undefined,
+      options
+    );
+  }
+
+  /** Retrieves historical yield data for a tenor. */
+  public async getHistory(tenor: string, options?: RequestOptions): Promise<any> {
+    if (!tenor || !tenor.trim()) throw new Error("Tenor must be a non-empty string.");
+    return this.transport.request<any>(
+      `/api/v1/rates/history/${encodeURIComponent(tenor.trim().toUpperCase())}`,
+      "GET",
+      undefined,
+      options
+    );
+  }
 }

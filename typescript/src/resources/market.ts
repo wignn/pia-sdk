@@ -9,6 +9,7 @@ import type {
   GetCandlesOptions,
   GetSymbolsOptions,
   MarketPricesResponse,
+  MarketPrice,
   OrderBook,
   RequestOptions,
   SymbolsResponse,
@@ -47,6 +48,55 @@ export class MarketResource {
     );
   }
 
+  /** Retrieves the latest quote for a single symbol. */
+  public async getPrice(symbol: string, options?: RequestOptions): Promise<MarketPrice> {
+    const cleanSymbol = this.validateSymbol(symbol);
+    return this.transport.request<MarketPrice>(
+      `/api/v1/market/prices/${encodeURIComponent(cleanSymbol)}`,
+      "GET",
+      undefined,
+      options
+    );
+  }
+
+  /** Retrieves the current exchange session state for a symbol. */
+  public async getSession(symbol: string, options?: RequestOptions): Promise<any> {
+    const cleanSymbol = this.validateSymbol(symbol);
+    return this.transport.request<any>(
+      `/api/v1/market/session/${encodeURIComponent(cleanSymbol)}`,
+      "GET",
+      undefined,
+      options
+    );
+  }
+
+  /** Retrieves data-quality and freshness diagnostics for market feeds. */
+  public async getDataQuality(options?: RequestOptions): Promise<any> {
+    return this.transport.request<any>("/api/v1/market/data-quality", "GET", undefined, options);
+  }
+
+  /** Retrieves detected short-window price spikes. */
+  public async getSpikes(options?: RequestOptions): Promise<any> {
+    return this.transport.request<any>("/api/v1/market/spikes", "GET", undefined, options);
+  }
+
+  /** Retrieves configured market alerts. */
+  public async getAlerts(options?: RequestOptions): Promise<any> {
+    return this.transport.request<any>("/api/v1/market/alerts", "GET", undefined, options);
+  }
+
+  /** Retrieves server-side smart alerts. */
+  public async getSmartAlerts(options?: RequestOptions): Promise<any> {
+    return this.transport.request<any>("/api/v1/market/smart-alerts", "GET", undefined, options);
+  }
+
+  private validateSymbol(symbol: string): string {
+    if (!symbol || typeof symbol !== "string" || symbol.trim() === "") {
+      throw new ValidationError("Symbol must be a non-empty string.", "symbol");
+    }
+    return symbol.trim().toUpperCase();
+  }
+
   /**
    * Fetches historical OHLCV candlestick bars for a given symbol and timeframe.
    *
@@ -82,6 +132,8 @@ export class MarketResource {
       timeframe: options?.timeframe || "1m",
       count: candleList.length,
       candles: candleList,
+      has_more: raw?.has_more,
+      next_before: raw?.next_before,
     };
   }
 
