@@ -4,6 +4,7 @@
 
 import type { ResolvedPiaConfig } from "../config";
 import { AuthenticationError, ConfigurationError, NetworkError } from "../errors";
+import { normalizeSymbol } from '../symbols';
 import { TypedEventEmitter } from "./events";
 
 export type SocketState =
@@ -195,8 +196,13 @@ export class RealtimeClient extends TypedEventEmitter {
     const newSymbols: string[] = [];
 
     for (const sym of list) {
-      const clean = sym.trim().toUpperCase();
-      if (clean && !this.subscribedSymbols.has(clean)) {
+      let clean: string;
+      try {
+        clean = normalizeSymbol(sym);
+      } catch {
+        continue;
+      }
+      if (!this.subscribedSymbols.has(clean)) {
         this.subscribedSymbols.add(clean);
         newSymbols.push(clean);
       }

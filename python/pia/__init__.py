@@ -83,7 +83,7 @@ from .types import (
     MacroMapResponse,
 )
 
-__version__ = "1.3.6"
+__version__ = "1.3.7"
 
 __all__ = [
     "PiaClient",

@@ -57,6 +57,8 @@ export class ValidationError extends PiaError {
   }
 }
 
+export class PiaValidationError extends ValidationError {}
+
 /**
  * Thrown on HTTP 401 Unauthorized (invalid or revoked API key).
  * Redacts any sensitive data.
@@ -163,6 +165,22 @@ export class ApiError extends PiaError {
     this.rawBody = rawBody;
   }
 }
+
+export class PiaApiError extends ApiError {}
+export class PiaAuthenticationError extends AuthenticationError {}
+export class PiaRateLimitError extends RateLimitError {}
+export class PiaNetworkError extends NetworkError {}
+
+export class PiaUnsupportedFeatureError extends ApiError {
+  public readonly code = 'ORDER_BOOK_NOT_SUPPORTED'
+
+  constructor(message: string, details?: PiaErrorDetails) {
+    super(message, 404, { code: 'ORDER_BOOK_NOT_SUPPORTED' }, details)
+    this.name = 'PiaUnsupportedFeatureError'
+  }
+}
+
+export class UnsupportedFeatureError extends PiaUnsupportedFeatureError {}
 
 /**
  * Sanitizes and redacts API keys and secrets from string representations.

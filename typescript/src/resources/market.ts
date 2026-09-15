@@ -2,7 +2,7 @@
  * Official PIA SDK - Market Intelligence API Resource
  */
 
-import { ValidationError } from "../errors";
+import { normalizeSymbol } from "../symbols";
 import type { HttpTransport } from "../http/transport";
 import type {
   CandleResponse,
@@ -26,6 +26,8 @@ export class MarketResource {
     if (options?.asset_type) params.set("asset_type", options.asset_type);
     if (options?.search) params.set("search", options.search);
     if (options?.exchange) params.set("exchange", options.exchange);
+    if (options?.limit !== undefined) params.set("limit", String(options.limit));
+    if (options?.offset !== undefined) params.set("offset", String(options.offset));
 
     const query = params.toString() ? `?${params.toString()}` : "";
     return this.transport.request<SymbolsResponse>(
@@ -50,7 +52,7 @@ export class MarketResource {
 
   /** Retrieves the latest quote for a single symbol. */
   public async getPrice(symbol: string, options?: RequestOptions): Promise<MarketPrice> {
-    const cleanSymbol = this.validateSymbol(symbol);
+    const cleanSymbol = normalizeSymbol(symbol);
     return this.transport.request<MarketPrice>(
       `/api/v1/market/prices/${encodeURIComponent(cleanSymbol)}`,
       "GET",
@@ -60,9 +62,9 @@ export class MarketResource {
   }
 
   /** Retrieves the current exchange session state for a symbol. */
-  public async getSession(symbol: string, options?: RequestOptions): Promise<any> {
-    const cleanSymbol = this.validateSymbol(symbol);
-    return this.transport.request<any>(
+  public async getSession(symbol: string, options?: RequestOptions): Promise<unknown> {
+    const cleanSymbol = normalizeSymbol(symbol);
+    return this.transport.request<unknown>(
       `/api/v1/market/session/${encodeURIComponent(cleanSymbol)}`,
       "GET",
       undefined,
@@ -71,30 +73,23 @@ export class MarketResource {
   }
 
   /** Retrieves data-quality and freshness diagnostics for market feeds. */
-  public async getDataQuality(options?: RequestOptions): Promise<any> {
-    return this.transport.request<any>("/api/v1/market/data-quality", "GET", undefined, options);
+  public async getDataQuality(options?: RequestOptions): Promise<unknown> {
+    return this.transport.request<unknown>("/api/v1/market/data-quality", "GET", undefined, options);
   }
 
   /** Retrieves detected short-window price spikes. */
-  public async getSpikes(options?: RequestOptions): Promise<any> {
-    return this.transport.request<any>("/api/v1/market/spikes", "GET", undefined, options);
+  public async getSpikes(options?: RequestOptions): Promise<unknown> {
+    return this.transport.request<unknown>("/api/v1/market/spikes", "GET", undefined, options);
   }
 
   /** Retrieves configured market alerts. */
-  public async getAlerts(options?: RequestOptions): Promise<any> {
-    return this.transport.request<any>("/api/v1/market/alerts", "GET", undefined, options);
+  public async getAlerts(options?: RequestOptions): Promise<unknown> {
+    return this.transport.request<unknown>("/api/v1/market/alerts", "GET", undefined, options);
   }
 
   /** Retrieves server-side smart alerts. */
-  public async getSmartAlerts(options?: RequestOptions): Promise<any> {
-    return this.transport.request<any>("/api/v1/market/smart-alerts", "GET", undefined, options);
-  }
-
-  private validateSymbol(symbol: string): string {
-    if (!symbol || typeof symbol !== "string" || symbol.trim() === "") {
-      throw new ValidationError("Symbol must be a non-empty string.", "symbol");
-    }
-    return symbol.trim().toUpperCase();
+  public async getSmartAlerts(options?: RequestOptions): Promise<unknown> {
+    return this.transport.request<unknown>("/api/v1/market/smart-alerts", "GET", undefined, options);
   }
 
   /**
@@ -107,11 +102,7 @@ export class MarketResource {
     symbol: string,
     options?: GetCandlesOptions
   ): Promise<CandleResponse> {
-    if (!symbol || typeof symbol !== "string" || symbol.trim() === "") {
-      throw new ValidationError("Symbol must be a non-empty string.", "symbol");
-    }
-
-    const cleanSymbol = symbol.trim().toUpperCase();
+    const cleanSymbol = normalizeSymbol(symbol);
     const params = new URLSearchParams();
     if (options?.timeframe) params.set("resolution", options.timeframe);
     if (options?.limit) params.set("limit", String(options.limit));
@@ -119,14 +110,19 @@ export class MarketResource {
     if (options?.until) params.set("before", String(options.until));
 
     const query = params.toString() ? `?${params.toString()}` : "";
-    const raw = await this.transport.request<any>(
+    const raw = await this.transport.request<{
+      candles?: CandleResponse["candles"];
+      items?: CandleResponse["candles"];
+      has_more?: boolean;
+      next_before?: number | null;
+    }>(
       `/api/v1/market/history/${encodeURIComponent(cleanSymbol)}${query}`,
       "GET",
       undefined,
       options
     );
 
-    const candleList = raw?.candles || raw?.items || [];
+    const candleList = raw.candles || raw.items || [];
     return {
       symbol: cleanSymbol,
       timeframe: options?.timeframe || "1m",
@@ -141,11 +137,7 @@ export class MarketResource {
    * Retrieves Level 2 DOM (Depth of Market) order book for a symbol.
    */
   public async getOrderBook(symbol: string, options?: RequestOptions): Promise<OrderBook> {
-    if (!symbol || typeof symbol !== "string" || symbol.trim() === "") {
-      throw new ValidationError("Symbol must be a non-empty string.", "symbol");
-    }
-
-    const cleanSymbol = symbol.trim().toUpperCase();
+    const cleanSymbol = normalizeSymbol(symbol);
     return this.transport.request<OrderBook>(
       `/api/v1/market/orderbook/${encodeURIComponent(cleanSymbol)}`,
       "GET",
@@ -157,13 +149,9 @@ export class MarketResource {
   /**
    * Retrieves AI/Quant market insights and price movement narrative for a given instrument.
    */
-  public async getInsights(symbol: string, options?: RequestOptions): Promise<any> {
-    if (!symbol || typeof symbol !== "string" || symbol.trim() === "") {
-      throw new ValidationError("Symbol must be a non-empty string.", "symbol");
-    }
-
-    const cleanSymbol = symbol.trim().toUpperCase();
-    return this.transport.request<any>(
+  public async getInsights(symbol: string, options?: RequestOptions): Promise<unknown> {
+    const cleanSymbol = normalizeSymbol(symbol);
+    return this.transport.request<unknown>(
       `/api/v1/market/insights/${encodeURIComponent(cleanSymbol)}`,
       "GET",
       undefined,
@@ -174,8 +162,8 @@ export class MarketResource {
   /**
    * Retrieves active market trading halts and circuit breaker triggers.
    */
-  public async getTradingHalts(options?: RequestOptions): Promise<any> {
-    return this.transport.request<any>(
+  public async getTradingHalts(options?: RequestOptions): Promise<unknown> {
+    return this.transport.request<unknown>(
       "/api/v1/market/trading-halts",
       "GET",
       undefined,
@@ -186,8 +174,8 @@ export class MarketResource {
   /**
    * Retrieves upcoming and historical corporate actions (dividends, splits, earnings).
    */
-  public async getCorporateActions(options?: RequestOptions): Promise<any> {
-    return this.transport.request<any>(
+  public async getCorporateActions(options?: RequestOptions): Promise<unknown> {
+    return this.transport.request<unknown>(
       "/api/v1/market/corporate-actions",
       "GET",
       undefined,
@@ -198,11 +186,11 @@ export class MarketResource {
   /**
    * Calculates historical realized volatility (HV) across rolling windows (10d, 30d, 90d).
    */
-  public async getRealizedVolatility(symbol?: string, options?: RequestOptions): Promise<any> {
+  public async getRealizedVolatility(symbol?: string, options?: RequestOptions): Promise<unknown> {
     const params = new URLSearchParams();
-    if (symbol) params.set("symbol", symbol.trim().toUpperCase());
+    if (symbol !== undefined) params.set("symbol", normalizeSymbol(symbol));
     const query = params.toString() ? `?${params.toString()}` : "";
-    return this.transport.request<any>(
+    return this.transport.request<unknown>(
       `/api/v1/market/realized-volatility${query}`,
       "GET",
       undefined,
@@ -213,11 +201,11 @@ export class MarketResource {
   /**
    * Retrieves implied volatility (IV) surface and ATM volatility index.
    */
-  public async getImpliedVolatility(symbol?: string, options?: RequestOptions): Promise<any> {
+  public async getImpliedVolatility(symbol?: string, options?: RequestOptions): Promise<unknown> {
     const params = new URLSearchParams();
-    if (symbol) params.set("symbol", symbol.trim().toUpperCase());
+    if (symbol !== undefined) params.set("symbol", normalizeSymbol(symbol));
     const query = params.toString() ? `?${params.toString()}` : "";
-    return this.transport.request<any>(
+    return this.transport.request<unknown>(
       `/api/v1/market/implied-volatility${query}`,
       "GET",
       undefined,
@@ -228,7 +216,7 @@ export class MarketResource {
   /**
    * @deprecated Use `getInsights(symbol)` instead.
    */
-  public async getWhy(symbol: string, options?: RequestOptions): Promise<any> {
+  public async getWhy(symbol: string, options?: RequestOptions): Promise<unknown> {
     return this.getInsights(symbol, options);
   }
 }

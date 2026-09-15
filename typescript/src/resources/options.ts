@@ -2,7 +2,7 @@
  * Official PIA SDK - Derivatives & Options Analytics Resource
  */
 
-import { ValidationError } from "../errors";
+import { normalizeSymbol } from "../symbols";
 import type { HttpTransport } from "../http/transport";
 import type {
   OptionChainResponse,
@@ -23,11 +23,7 @@ export class OptionsResource {
     symbol: string,
     options?: RequestOptions
   ): Promise<OptionChainResponse> {
-    if (!symbol || typeof symbol !== "string" || symbol.trim() === "") {
-      throw new ValidationError("Symbol must be a non-empty string.", "symbol");
-    }
-
-    const clean = symbol.trim().toUpperCase();
+    const clean = normalizeSymbol(symbol);
     const params = new URLSearchParams({ symbol: clean });
     return this.transport.request<OptionChainResponse>(
       `/api/v1/options/chain?${params.toString()}`,
@@ -46,11 +42,7 @@ export class OptionsResource {
     symbol: string,
     options?: RequestOptions
   ): Promise<OptionGexResponse> {
-    if (!symbol || typeof symbol !== "string" || symbol.trim() === "") {
-      throw new ValidationError("Symbol must be a non-empty string.", "symbol");
-    }
-
-    const clean = symbol.trim().toUpperCase();
+    const clean = normalizeSymbol(symbol);
     const params = new URLSearchParams({ symbol: clean });
     return this.transport.request<OptionGexResponse>(
       `/api/v1/options/gex?${params.toString()}`,

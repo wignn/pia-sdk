@@ -16,8 +16,7 @@ describe("Comprehensive Intelligence Resources (Options, Macro, Social, Intellig
     const config = resolveConfig({
       apiKey: "wi_live_test_key",
       fetch: (async (url: string) => {
-        if (url.includes("/api/v1/options/chain")) {
-        expect(url).toContain("symbol=NVDA");
+        if (url.includes("/api/v1/options/chain?symbol=NVDA")) {
           return new Response(
             JSON.stringify({
               symbol: "NVDA",
@@ -28,8 +27,7 @@ describe("Comprehensive Intelligence Resources (Options, Macro, Social, Intellig
             { status: 200, headers: { "content-type": "application/json" } }
           );
         }
-        if (url.includes("/api/v1/options/gex")) {
-        expect(url).toContain("symbol=SPX");
+        if (url.includes("/api/v1/options/gex?symbol=SPX")) {
           return new Response(
             JSON.stringify({
               symbol: "SPX",

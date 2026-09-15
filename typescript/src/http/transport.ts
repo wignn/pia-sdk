@@ -4,18 +4,19 @@
 
 import type { ResolvedPiaConfig } from "../config";
 import {
-  ApiError,
-  AuthenticationError,
-  NetworkError,
+  PiaApiError,
+  PiaAuthenticationError,
+  PiaNetworkError,
+  PiaRateLimitError,
+  PiaUnsupportedFeatureError,
   ParseError,
   PermissionError,
-  RateLimitError,
   TimeoutError,
 } from "../errors";
 import type { RateLimitInfo, RequestOptions } from "../types";
 
 const RETRYABLE_STATUS_CODES = new Set([408, 429, 500, 502, 503, 504]);
-const SDK_VERSION = "1.3.6";
+const SDK_VERSION = "1.3.7";
 
 export class HttpTransport {
   private lastRateLimitInfo: RateLimitInfo = {};
@@ -109,16 +110,20 @@ export class HttpTransport {
         // Handle error responses
         const status = response.status;
         const errorText = await response.text().catch(() => "");
-        let errorJson: any = null;
+        let errorJson: unknown;
         try {
           if (errorText) errorJson = JSON.parse(errorText);
         } catch {
           // Ignored if not JSON
         }
 
+        const errorObject =
+          errorJson && typeof errorJson === "object"
+            ? (errorJson as Record<string, unknown>)
+            : undefined;
         const errorMessage =
-          errorJson?.message ||
-          errorJson?.error ||
+          (typeof errorObject?.message === "string" && errorObject.message) ||
+          (typeof errorObject?.error === "string" && errorObject.error) ||
           (errorText ? errorText.slice(0, 200) : `HTTP ${status}`);
 
         const isRetryable = RETRYABLE_STATUS_CODES.has(status) && attempt <= maxRetries;
@@ -165,7 +170,7 @@ export class HttpTransport {
           continue;
         }
 
-        throw new NetworkError(
+        throw new PiaNetworkError(
           `Network transport failed connecting to ${endpoint}: ${err instanceof Error ? err.message : String(err)}`,
           err,
           { endpoint, method }
@@ -246,17 +251,21 @@ export class HttpTransport {
     };
 
     if (status === 401) {
-      throw new AuthenticationError(message, details);
+      throw new PiaAuthenticationError(message, details);
     }
 
     if (status === 403) {
       throw new PermissionError(message, undefined, details);
     }
 
+    if (status === 404 && body && typeof body === 'object' && (body as Record<string, unknown>).code === 'ORDER_BOOK_NOT_SUPPORTED') {
+      throw new PiaUnsupportedFeatureError(message, details);
+    }
+
     if (status === 429) {
       const retryAfter = headers.get("retry-after");
       const retryAfterSeconds = retryAfter ? parseInt(retryAfter, 10) : undefined;
-      throw new RateLimitError(message, {
+      throw new PiaRateLimitError(message, {
         retryAfterSeconds: Number.isFinite(retryAfterSeconds) ? retryAfterSeconds : undefined,
         dailyLimit: this.lastRateLimitInfo.dailyLimit,
         dailyRemaining: this.lastRateLimitInfo.dailyRemaining,
@@ -266,7 +275,7 @@ export class HttpTransport {
       });
     }
 
-    throw new ApiError(message, status, body, details);
+    throw new PiaApiError(message, status, body, details);
   }
 
   private sleep(ms: number): Promise<void> {

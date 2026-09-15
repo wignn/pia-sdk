@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { PiaClient, ValidationError } from "../src";
+import { PiaClient, PiaUnsupportedFeatureError, ValidationError } from "../src";
 
 describe("Market Resource", () => {
   it("fetches multi-asset prices snapshot", async () => {
@@ -54,6 +54,40 @@ describe("Market Resource", () => {
     expect(res.total).toBe(1);
     expect(res.items[0].symbol).toBe("BTCUSDT");
     expect(res.items[0].price_precision).toBe(2);
+  });
+
+  it("rejects invalid symbols without making network requests", async () => {
+    let calls = 0;
+    const client = new PiaClient({ apiKey: "test", fetch: (async () => { calls++; return new Response('{}'); }) as any });
+    await expect(client.market.getOrderBook("")).rejects.toThrow(ValidationError);
+    await expect(client.market.getOrderBook("   ")).rejects.toThrow(ValidationError);
+    await expect(client.options.getChain("")).rejects.toThrow(ValidationError);
+    await expect(client.options.getGex("   ")).rejects.toThrow(ValidationError);
+    expect(calls).toBe(0);
+  });
+
+  it("maps unsupported order books without retrying", async () => {
+    let calls = 0;
+    const client = new PiaClient({
+      apiKey: "test",
+      maxRetries: 3,
+      retryDelayMs: 1,
+      fetch: (async () => {
+        calls++;
+        return new Response(
+          JSON.stringify({
+            code: "ORDER_BOOK_NOT_SUPPORTED",
+            message: "Order book is not supported for this instrument",
+          }),
+          { status: 404, headers: { "content-type": "application/json" } },
+        );
+      }) as any,
+    });
+
+    await expect(client.market.getOrderBook("XAGUSD")).rejects.toBeInstanceOf(
+      PiaUnsupportedFeatureError,
+    );
+    expect(calls).toBe(1);
   });
 
   it("validates symbol when fetching candlestick bars", async () => {

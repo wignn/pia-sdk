@@ -13,11 +13,18 @@ export {
   PiaError,
   ConfigurationError,
   ValidationError,
+  PiaValidationError,
+  PiaApiError,
+  PiaUnsupportedFeatureError,
+  UnsupportedFeatureError,
   AuthenticationError,
+  PiaAuthenticationError,
   PermissionError,
   RateLimitError,
   TimeoutError,
   NetworkError,
+  PiaNetworkError,
+  PiaRateLimitError,
   ParseError,
   ApiError,
   redactSensitive,
@@ -64,6 +71,7 @@ export {
   type CotReportResponse,
   type CentralBankStanceResponse,
 } from "./types";
+export { normalizeSymbol, type MarketSymbol, type MarketAssetClass, type MarketCapabilities } from './symbols';
 export {
   RealtimeClient,
   type SocketState,

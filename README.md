@@ -21,8 +21,8 @@
 
 | Package | Language | Version | Registry | Directory | Status |
 |---|---|---|---|---|---|
-| **`@piaa/sdk`** | TypeScript / JavaScript | **`1.3.6`** | [npm](https://www.npmjs.com/package/@piaa/sdk) | [`/typescript`](./typescript) | ![npm](https://img.shields.io/npm/v/@piaa/sdk) |
-| **`piaa-sdk`** | Python (Sync & Async) | **`1.3.6`** | [PyPI](https://pypi.org/project/piaa-sdk/) | [`/python`](./python) | ![PyPI](https://img.shields.io/pypi/v/piaa-sdk) |
+| **`@piaa/sdk`** | TypeScript / JavaScript | **`1.3.7`** | [npm](https://www.npmjs.com/package/@piaa/sdk) | [`/typescript`](./typescript) | ![npm](https://img.shields.io/npm/v/@piaa/sdk) |
+| **`piaa-sdk`** | Python (Sync & Async) | **`1.3.7`** | [PyPI](https://pypi.org/project/piaa-sdk/) | [`/python`](./python) | ![PyPI](https://img.shields.io/pypi/v/piaa-sdk) |
 
 ---
 

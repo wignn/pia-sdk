@@ -60,6 +60,8 @@ export interface GetSymbolsOptions extends RequestOptions {
   asset_type?: "crypto" | "forex" | "stock" | "commodity" | "index" | "rates" | string;
   search?: string;
   exchange?: string;
+  limit?: number;
+  offset?: number;
 }
 
 export interface Candle {
