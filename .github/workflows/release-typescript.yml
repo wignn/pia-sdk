@@ -3,7 +3,6 @@ name: Release TypeScript SDK to npm
 on:
   push:
     tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+*'
       - 'ts-v[0-9]+.[0-9]+.[0-9]+*'
   workflow_dispatch:
     inputs:

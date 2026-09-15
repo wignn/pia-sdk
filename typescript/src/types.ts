@@ -185,10 +185,14 @@ export interface MacroMapResponse {
   countries: MacroMapCountryItem[];
   total: number;
   source: string;
+  is_live?: boolean;
+  updated_at?: string;
+  unavailable_reason?: string;
+  error_code?: string;
 }
 
 export interface GetMacroMapOptions extends RequestOptions {
-  indicator?: "inflation" | "unemployment" | "gdp" | "interest_rate" | "policy_rate" | "pmi" | string;
+  indicator?: "inflation" | "unemployment" | "gdp" | "gdp_growth" | "interest_rate" | "policy_rate" | "pmi" | string;
   period?: string;
 }
 
