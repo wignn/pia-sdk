@@ -21,8 +21,8 @@
 
 | Package | Language | Version | Registry | Directory | Status |
 |---|---|---|---|---|---|
-| **`@piaa/sdk`** | TypeScript / JavaScript | **`1.3.1`** | [npm](https://www.npmjs.com/package/@piaa/sdk) | [`/typescript`](./typescript) | ![npm](https://img.shields.io/npm/v/@piaa/sdk) |
-| **`piaa-sdk`** | Python (Sync & Async) | **`1.3.1`** | [PyPI](https://pypi.org/project/piaa-sdk/) | [`/python`](./python) | ![PyPI](https://img.shields.io/pypi/v/piaa-sdk) |
+| **`@piaa/sdk`** | TypeScript / JavaScript | **`1.3.2`** | [npm](https://www.npmjs.com/package/@piaa/sdk) | [`/typescript`](./typescript) | ![npm](https://img.shields.io/npm/v/@piaa/sdk) |
+| **`piaa-sdk`** | Python (Sync & Async) | **`1.3.2`** | [PyPI](https://pypi.org/project/piaa-sdk/) | [`/python`](./python) | ![PyPI](https://img.shields.io/pypi/v/piaa-sdk) |
 
 ---
 
@@ -32,7 +32,7 @@ Both TypeScript and Python SDKs expose 100% of the PIA Engine backend microservi
 
 | Resource Domain | Methods / Capabilities | Endpoints Covered |
 |---|---|---|
-| **`market`** | `getPrices()`, `getCandles()`, `getOrderBook()`, `getTradingHalts()`, `getCorporateActions()`, `getRealizedVolatility()`, `getImpliedVolatility()` | `/api/v1/market/*` |
+| **`market`** | `getPrices()`, `getSymbols()`, `getCandles()`, `getOrderBook()`, `getTradingHalts()`, `getCorporateActions()`, `getRealizedVolatility()`, `getImpliedVolatility()` | `/api/v1/market/*` |
 | **`intelligence`** | `analyze()`, `getInsights()` | `/api/v1/intelligence/analyze`, `/api/v1/market/insights/*` |
 | **`options`** | `getChain()`, `getGex()`, `getSummary()` | `/api/v1/options/*` |
 | **`macro`** | `getFearGreed()`, `getCot()`, `getCentralBankStance()` | `/api/v1/fear-greed`, `/api/v1/cot/*`, `/api/v1/central-banks/*` |

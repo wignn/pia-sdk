@@ -106,6 +106,54 @@ class MarketPricesResponse:
 
 
 @dataclass
+class SymbolItem:
+    symbol: str
+    asset_type: str
+    exchange: str
+    source: str
+    price_precision: int = 2
+    tick_size: float = 0.01
+    is_active: bool = True
+    name: Optional[str] = None
+    last_price: Optional[float] = None
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> SymbolItem:
+        return cls(
+            symbol=str(data.get("symbol", "")).upper(),
+            asset_type=str(data.get("asset_type", "")),
+            exchange=str(data.get("exchange", "")),
+            source=str(data.get("source", "")),
+            price_precision=int(data.get("price_precision", 2)),
+            tick_size=float(data.get("tick_size", 0.01)),
+            is_active=bool(data.get("is_active", True)),
+            name=data.get("name"),
+            last_price=float(data["last_price"]) if data.get("last_price") is not None else None,
+        )
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass
+class SymbolsResponse:
+    total: int
+    items: List[SymbolItem] = field(default_factory=list)
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> SymbolsResponse:
+        raw_items = data.get("items") or []
+        items = [SymbolItem.from_dict(item) for item in raw_items if isinstance(item, dict)]
+        return cls(
+            total=int(data.get("total", len(items))),
+            items=items,
+        )
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass
 class Candle:
     """OHLCV historical bar."""
 

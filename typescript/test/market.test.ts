@@ -26,6 +26,36 @@ describe("Market Resource", () => {
     expect(res.items[1].price).toBe(60000.0);
   });
 
+  it("fetches supported market symbols catalog", async () => {
+    const mockFetch = async (url: string) => {
+      expect(url).toContain("/api/v1/market/symbols?asset_type=crypto");
+      return new Response(
+        JSON.stringify({
+          total: 1,
+          items: [
+            {
+              symbol: "BTCUSDT",
+              asset_type: "crypto",
+              exchange: "BINANCE",
+              source: "binance",
+              price_precision: 2,
+              tick_size: 0.01,
+              is_active: true,
+            },
+          ],
+        }),
+        { status: 200 }
+      );
+    };
+
+    const client = new PiaClient({ apiKey: "wi_live_test", fetch: mockFetch as any });
+    const res = await client.market.getSymbols({ asset_type: "crypto" });
+
+    expect(res.total).toBe(1);
+    expect(res.items[0].symbol).toBe("BTCUSDT");
+    expect(res.items[0].price_precision).toBe(2);
+  });
+
   it("validates symbol when fetching candlestick bars", async () => {
     const client = new PiaClient({ apiKey: "test", fetch: (async () => {}) as any });
 

@@ -7,7 +7,7 @@ from urllib.parse import quote
 
 from ..errors import ValidationError
 from ..transport import AsyncTransport, SyncTransport
-from ..types import CandleResponse, MarketPricesResponse, OrderBook
+from ..types import CandleResponse, MarketPricesResponse, OrderBook, SymbolItem, SymbolsResponse
 
 
 def _validate_symbol(symbol: str) -> str:
@@ -21,6 +21,24 @@ class MarketResource:
 
     def __init__(self, transport: SyncTransport) -> None:
         self._transport = transport
+
+    def get_symbols(
+        self,
+        *,
+        asset_type: Optional[str] = None,
+        search: Optional[str] = None,
+        exchange: Optional[str] = None,
+    ) -> SymbolsResponse:
+        """Retrieves catalog of all supported market instruments with precision & exchange metadata."""
+        params: Dict[str, Any] = {}
+        if asset_type:
+            params["asset_type"] = asset_type
+        if search:
+            params["search"] = search
+        if exchange:
+            params["exchange"] = exchange
+        data = self._transport.request("/api/v1/market/symbols", method="GET", params=params)
+        return SymbolsResponse.from_dict(data)
 
     def get_prices(self) -> MarketPricesResponse:
         """Retrieves a live price snapshot for all tracked global financial instruments."""
@@ -95,6 +113,24 @@ class AsyncMarketResource:
 
     def __init__(self, transport: AsyncTransport) -> None:
         self._transport = transport
+
+    async def get_symbols(
+        self,
+        *,
+        asset_type: Optional[str] = None,
+        search: Optional[str] = None,
+        exchange: Optional[str] = None,
+    ) -> SymbolsResponse:
+        """Asynchronously retrieves catalog of all supported market instruments."""
+        params: Dict[str, Any] = {}
+        if asset_type:
+            params["asset_type"] = asset_type
+        if search:
+            params["search"] = search
+        if exchange:
+            params["exchange"] = exchange
+        data = await self._transport.request("/api/v1/market/symbols", method="GET", params=params)
+        return SymbolsResponse.from_dict(data)
 
     async def get_prices(self) -> MarketPricesResponse:
         """Retrieves a live price snapshot for all tracked global financial instruments."""

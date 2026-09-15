@@ -38,7 +38,10 @@ from pia import PiaClient, RateLimitError, AuthenticationError
 client = PiaClient(api_key="wi_live_your_key")
 
 try:
-    # 1. Fetch live multi-asset snapshot (105+ symbols)
+    # 1. Fetch live multi-asset snapshot & symbol catalog
+    catalog = client.market.get_symbols(asset_type="crypto")
+    print(f"Available crypto instruments: {catalog.total}")
+
     prices = client.market.get_prices()
     print(f"Total instruments tracked: {prices.total}")
 

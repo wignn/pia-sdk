@@ -7,13 +7,33 @@ import type { HttpTransport } from "../http/transport";
 import type {
   CandleResponse,
   GetCandlesOptions,
+  GetSymbolsOptions,
   MarketPricesResponse,
   OrderBook,
   RequestOptions,
+  SymbolsResponse,
 } from "../types";
 
 export class MarketResource {
   constructor(private readonly transport: HttpTransport) {}
+
+  /**
+   * Retrieves the catalog of all supported and tradable market instruments with precision & exchange metadata.
+   */
+  public async getSymbols(options?: GetSymbolsOptions): Promise<SymbolsResponse> {
+    const params = new URLSearchParams();
+    if (options?.asset_type) params.set("asset_type", options.asset_type);
+    if (options?.search) params.set("search", options.search);
+    if (options?.exchange) params.set("exchange", options.exchange);
+
+    const query = params.toString() ? `?${params.toString()}` : "";
+    return this.transport.request<SymbolsResponse>(
+      `/api/v1/market/symbols${query}`,
+      "GET",
+      undefined,
+      options
+    );
+  }
 
   /**
    * Retrieves current multi-asset price snapshot for all tracked global symbols.

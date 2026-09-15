@@ -34,9 +34,32 @@ export interface MarketPrice {
 }
 
 export interface MarketPricesResponse {
-  total: number;
-  timestamp: number;
   items: MarketPrice[];
+  total: number;
+  timestamp?: string;
+}
+
+export interface SymbolItem {
+  symbol: string;
+  name?: string;
+  asset_type: string;
+  exchange: string;
+  source: string;
+  price_precision: number;
+  tick_size: number;
+  is_active: boolean;
+  last_price?: number;
+}
+
+export interface SymbolsResponse {
+  total: number;
+  items: SymbolItem[];
+}
+
+export interface GetSymbolsOptions extends RequestOptions {
+  asset_type?: "crypto" | "forex" | "stock" | "commodity" | "index" | "rates" | string;
+  search?: string;
+  exchange?: string;
 }
 
 export interface Candle {

@@ -7,7 +7,7 @@ with open("README.md", "r", encoding="utf-8") as f:
 
 setup(
     name="piaa-sdk",
-    version="1.3.1",
+    version="1.3.2",
     description="Official Python SDK for PIA Market Intelligence & Realtime Financial Platform",
     long_description=long_description,
     long_description_content_type="text/markdown",

@@ -33,6 +33,38 @@ class TestMarketResource(unittest.TestCase):
         self.assertEqual(res.items[0].symbol, "XAUUSD")
         self.assertEqual(res.items[1].price, 60500.0)
 
+    def test_get_symbols_catalog(self):
+        def mock_handler(request: httpx.Request) -> httpx.Response:
+            self.assertIn("/api/v1/market/symbols", str(request.url))
+            self.assertIn("asset_type=forex", str(request.url))
+            return httpx.Response(
+                200,
+                json={
+                    "total": 1,
+                    "items": [
+                        {
+                            "symbol": "EURUSD",
+                            "asset_type": "forex",
+                            "exchange": "OANDA",
+                            "source": "oanda",
+                            "price_precision": 5,
+                            "tick_size": 0.00001,
+                            "is_active": True,
+                        }
+                    ],
+                },
+            )
+
+        client = PiaClient(
+            api_key="test",
+            http_client=httpx.Client(transport=httpx.MockTransport(mock_handler)),
+        )
+
+        res = client.market.get_symbols(asset_type="forex")
+        self.assertEqual(res.total, 1)
+        self.assertEqual(res.items[0].symbol, "EURUSD")
+        self.assertEqual(res.items[0].price_precision, 5)
+
     def test_get_candles_validates_symbol(self):
         client = PiaClient(
             api_key="test",

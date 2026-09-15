@@ -61,6 +61,8 @@ from .types import (
     FearGreedHistoryResponse,
     MarketPrice,
     MarketPricesResponse,
+    SymbolItem,
+    SymbolsResponse,
     NewsArticle,
     NewsFeedResponse,
     OptionChainResponse,
@@ -77,7 +79,7 @@ from .types import (
     WsTicketResponse,
 )
 
-__version__ = "1.3.1"
+__version__ = "1.3.2"
 
 __all__ = [
     "PiaClient",
@@ -98,6 +100,8 @@ __all__ = [
     "AsyncRealtimeClient",
     "MarketPrice",
     "MarketPricesResponse",
+    "SymbolItem",
+    "SymbolsResponse",
     "Candle",
     "CandleResponse",
     "OrderBook",

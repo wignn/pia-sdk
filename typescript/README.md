@@ -47,7 +47,10 @@ const client = new PiaClient({
 
 async function run() {
   try {
-    // 1. Fetch live multi-asset snapshot (105+ symbols)
+    // 1. Fetch live multi-asset snapshot & symbol catalog
+    const symbols = await client.market.getSymbols({ asset_type: "crypto" });
+    console.log(`Available crypto symbols: ${symbols.total}`);
+
     const prices = await client.market.getPrices();
     console.log(`Tracked assets: ${prices.total}`);
     for (const item of prices.items.slice(0, 5)) {
