@@ -28,8 +28,9 @@ export class OptionsResource {
     }
 
     const clean = symbol.trim().toUpperCase();
+    const params = new URLSearchParams({ symbol: clean });
     return this.transport.request<OptionChainResponse>(
-      `/api/v1/options/chain/${encodeURIComponent(clean)}`,
+      `/api/v1/options/chain?${params.toString()}`,
       "GET",
       undefined,
       options
@@ -50,8 +51,9 @@ export class OptionsResource {
     }
 
     const clean = symbol.trim().toUpperCase();
+    const params = new URLSearchParams({ symbol: clean });
     return this.transport.request<OptionGexResponse>(
-      `/api/v1/options/gex/${encodeURIComponent(clean)}`,
+      `/api/v1/options/gex?${params.toString()}`,
       "GET",
       undefined,
       options

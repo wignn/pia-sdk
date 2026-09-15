@@ -22,7 +22,9 @@ class OptionsResource:
             raise ValidationError("Symbol must be a non-empty string.", param_name="symbol")
         clean = symbol.strip().upper()
         encoded = urllib.parse.quote(clean, safe="")
-        data = self._transport.request(f"/api/v1/options/chain/{encoded}", method="GET")
+        data = self._transport.request(
+            "/api/v1/options/chain", method="GET", params={"symbol": clean}
+        )
         return OptionChainResponse.from_dict(data)
 
     def get_gex(self, symbol: str) -> OptionGexResponse:
@@ -31,7 +33,9 @@ class OptionsResource:
             raise ValidationError("Symbol must be a non-empty string.", param_name="symbol")
         clean = symbol.strip().upper()
         encoded = urllib.parse.quote(clean, safe="")
-        data = self._transport.request(f"/api/v1/options/gex/{encoded}", method="GET")
+        data = self._transport.request(
+            "/api/v1/options/gex", method="GET", params={"symbol": clean}
+        )
         return OptionGexResponse.from_dict(data)
 
     def get_summary(self) -> OptionSummaryResponse:
@@ -52,7 +56,9 @@ class AsyncOptionsResource:
             raise ValidationError("Symbol must be a non-empty string.", param_name="symbol")
         clean = symbol.strip().upper()
         encoded = urllib.parse.quote(clean, safe="")
-        data = await self._transport.request(f"/api/v1/options/chain/{encoded}", method="GET")
+        data = await self._transport.request(
+            "/api/v1/options/chain", method="GET", params={"symbol": clean}
+        )
         return OptionChainResponse.from_dict(data)
 
     async def get_gex(self, symbol: str) -> OptionGexResponse:
@@ -61,7 +67,9 @@ class AsyncOptionsResource:
             raise ValidationError("Symbol must be a non-empty string.", param_name="symbol")
         clean = symbol.strip().upper()
         encoded = urllib.parse.quote(clean, safe="")
-        data = await self._transport.request(f"/api/v1/options/gex/{encoded}", method="GET")
+        data = await self._transport.request(
+            "/api/v1/options/gex", method="GET", params={"symbol": clean}
+        )
         return OptionGexResponse.from_dict(data)
 
     async def get_summary(self) -> OptionSummaryResponse:

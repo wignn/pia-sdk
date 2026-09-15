@@ -70,7 +70,7 @@ class TestAllResources(unittest.TestCase):
     def test_options_resource(self):
         def mock_handler(request: httpx.Request) -> httpx.Response:
             if "/api/v1/options/chain" in str(request.url):
-                self.assertIn("/api/v1/options/chain/NVDA", str(request.url))
+                self.assertIn("symbol=NVDA", str(request.url))
                 return httpx.Response(
                     200,
                     json={
@@ -81,7 +81,7 @@ class TestAllResources(unittest.TestCase):
                     },
                 )
             if "/api/v1/options/gex" in str(request.url):
-                self.assertIn("/api/v1/options/gex/SPX", str(request.url))
+                self.assertIn("symbol=SPX", str(request.url))
                 return httpx.Response(
                     200,
                     json={
