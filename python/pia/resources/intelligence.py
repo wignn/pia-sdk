@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import urllib.parse
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from ..errors import ValidationError
 from ..transport import AsyncTransport, SyncTransport
@@ -17,18 +17,31 @@ class IntelligenceResource:
 
     def analyze(
         self,
+        request: Optional[Union[str, Dict[str, Any]]] = None,
+        *,
         symbol: Optional[str] = None,
         query: Optional[str] = None,
+        text: Optional[str] = None,
         context: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """Generates AI-powered real-time quantitative analysis and catalyst explanations."""
         payload: Dict[str, Any] = {}
+        if isinstance(request, str):
+            payload["symbol"] = request.strip().upper()
+            payload["query"] = request
+            payload["text"] = request
+        elif isinstance(request, dict):
+            payload.update(request)
+
         if symbol:
             payload["symbol"] = symbol.strip().upper()
         if query:
             payload["query"] = query
+        if text:
+            payload["text"] = text
         if context:
             payload["context"] = context
+
         return self._transport.request("/api/v1/intelligence/analyze", method="POST", json_data=payload)
 
     def get_insights(self, symbol: str) -> Dict[str, Any]:
@@ -48,18 +61,31 @@ class AsyncIntelligenceResource:
 
     async def analyze(
         self,
+        request: Optional[Union[str, Dict[str, Any]]] = None,
+        *,
         symbol: Optional[str] = None,
         query: Optional[str] = None,
+        text: Optional[str] = None,
         context: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """Asynchronously generates AI-powered quantitative analysis."""
         payload: Dict[str, Any] = {}
+        if isinstance(request, str):
+            payload["symbol"] = request.strip().upper()
+            payload["query"] = request
+            payload["text"] = request
+        elif isinstance(request, dict):
+            payload.update(request)
+
         if symbol:
             payload["symbol"] = symbol.strip().upper()
         if query:
             payload["query"] = query
+        if text:
+            payload["text"] = text
         if context:
             payload["context"] = context
+
         return await self._transport.request("/api/v1/intelligence/analyze", method="POST", json_data=payload)
 
     async def get_insights(self, symbol: str) -> Dict[str, Any]:

@@ -9,12 +9,13 @@ import type { RequestOptions } from "../types";
 export interface IntelligenceAnalyzeRequest {
   symbol?: string;
   query?: string;
+  text?: string;
   context?: Record<string, any>;
 }
 
 export interface IntelligenceAnalyzeResponse {
   symbol?: string;
-  sentiment?: "bullish" | "bearish" | "neutral";
+  sentiment?: "bullish" | "bearish" | "neutral" | string;
   confidence?: number;
   analysis: string;
   catalysts?: string[];
@@ -38,15 +39,21 @@ export class IntelligenceResource {
 
   /**
    * Generates AI-powered real-time quantitative analysis and catalyst explanations.
+   * Accepts either a symbol string (e.g. "ETHUSDT") or a structured request payload.
    */
   public async analyze(
-    request: IntelligenceAnalyzeRequest,
+    request: string | IntelligenceAnalyzeRequest,
     options?: RequestOptions
   ): Promise<IntelligenceAnalyzeResponse> {
+    const payload: IntelligenceAnalyzeRequest =
+      typeof request === "string"
+        ? { symbol: request, query: request, text: request }
+        : request;
+
     return this.transport.request<IntelligenceAnalyzeResponse>(
       "/api/v1/intelligence/analyze",
       "POST",
-      request,
+      payload,
       options
     );
   }
