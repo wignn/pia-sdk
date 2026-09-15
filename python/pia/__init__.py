@@ -77,9 +77,13 @@ from .types import (
     SocialPostItem,
     SocialPostsResponse,
     WsTicketResponse,
+    EconomicEvent,
+    EconomicCalendarResponse,
+    MacroMapCountryItem,
+    MacroMapResponse,
 )
 
-__version__ = "1.3.2"
+__version__ = "1.3.3"
 
 __all__ = [
     "PiaClient",
@@ -106,6 +110,10 @@ __all__ = [
     "CandleResponse",
     "OrderBook",
     "OrderBookLevel",
+    "EconomicEvent",
+    "EconomicCalendarResponse",
+    "MacroMapCountryItem",
+    "MacroMapResponse",
     "SocialPost",
     "SocialFeedResponse",
     "SocialPostItem",

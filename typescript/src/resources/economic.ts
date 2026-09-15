@@ -3,10 +3,34 @@
  */
 
 import type { HttpTransport } from "../http/transport";
-import type { EconomicCalendarResponse, GetCalendarOptions, RequestOptions } from "../types";
+import type {
+  EconomicCalendarResponse,
+  GetCalendarOptions,
+  GetMacroMapOptions,
+  MacroMapResponse,
+  RequestOptions,
+} from "../types";
 
 export class EconomicResource {
   constructor(private readonly transport: HttpTransport) {}
+
+  /**
+   * Retrieves global Macro Maps choropleth data (Inflation, Unemployment, GDP, Policy Rates, PMI)
+   * with sovereign rankings, historical timeline, and delta changes.
+   */
+  public async getMacroMap(options?: GetMacroMapOptions): Promise<MacroMapResponse> {
+    const params = new URLSearchParams();
+    if (options?.indicator) params.set("indicator", options.indicator);
+    if (options?.period) params.set("period", options.period);
+
+    const query = params.toString() ? `?${params.toString()}` : "";
+    return this.transport.request<MacroMapResponse>(
+      `/api/v1/economic/map${query}`,
+      "GET",
+      undefined,
+      options
+    );
+  }
 
   /**
    * Fetches global macroeconomic calendar events (NFP, CPI, interest rates, GDP).

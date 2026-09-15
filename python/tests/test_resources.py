@@ -154,6 +154,38 @@ class TestAllResources(unittest.TestCase):
         actions = client.market.get_corporate_actions()
         self.assertEqual(actions["actions"], [])
 
+    def test_macro_map_resource(self):
+        def mock_handler(request: httpx.Request) -> httpx.Response:
+            self.assertIn("/api/v1/economic/map", str(request.url))
+            self.assertIn("indicator=inflation", str(request.url))
+            return httpx.Response(
+                200,
+                json={
+                    "indicator": "inflation",
+                    "indicator_name": "Inflation Rate",
+                    "unit": "Percent",
+                    "period": "2026-08",
+                    "min_value": 0.5,
+                    "max_value": 30.0,
+                    "timeline": ["2026-07", "2026-08"],
+                    "total": 2,
+                    "countries": [
+                        {"country_code": "CA", "country_name": "Canada", "value": 3.0, "rank": 1},
+                        {"country_code": "ID", "country_name": "Indonesia", "value": 3.19, "rank": 2},
+                    ],
+                },
+            )
+
+        client = PiaClient(
+            api_key="test",
+            http_client=httpx.Client(transport=httpx.MockTransport(mock_handler)),
+        )
+        res = client.economic.get_macro_map(indicator="inflation", period="2026-08")
+        self.assertEqual(res.indicator, "inflation")
+        self.assertEqual(res.countries[0].country_code, "CA")
+        self.assertEqual(res.countries[0].value, 3.0)
+        self.assertEqual(res.countries[1].country_name, "Indonesia")
+
 
 if __name__ == "__main__":
     unittest.main()

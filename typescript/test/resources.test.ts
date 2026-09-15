@@ -117,4 +117,41 @@ describe("Comprehensive Intelligence Resources (Options, Macro, Social, Intellig
     const dash = await energy.getDashboard();
     expect(dash.crude_oil?.wti_price).toBe(78.5);
   });
+
+  it("fetches global macro maps choropleth data (Inflation, Unemployment)", async () => {
+    const config = resolveConfig({
+      apiKey: "wi_live_test_key",
+      fetch: (async (url: string) => {
+        if (url.includes("/api/v1/economic/map")) {
+          return new Response(
+            JSON.stringify({
+              indicator: "inflation",
+              indicator_name: "Inflation Rate (CPI YoY)",
+              unit: "Percent",
+              period: "2026-08",
+              min_value: 0.5,
+              max_value: 30.0,
+              timeline: ["2026-07", "2026-08"],
+              total: 2,
+              countries: [
+                { country_code: "MX", country_name: "Mexico", value: 3.26, rank: 1 },
+                { country_code: "ID", country_name: "Indonesia", value: 3.19, rank: 2 },
+              ],
+            }),
+            { status: 200, headers: { "content-type": "application/json" } }
+          );
+        }
+        return new Response("Not found", { status: 404 });
+      }) as any,
+    });
+
+    const transport = new HttpTransport(config);
+    const economic = new EconomicResource(transport);
+
+    const mapData = await economic.getMacroMap({ indicator: "inflation", period: "2026-08" });
+    expect(mapData.indicator).toBe("inflation");
+    expect(mapData.countries[0].country_code).toBe("MX");
+    expect(mapData.countries[0].value).toBe(3.26);
+    expect(mapData.countries[1].country_name).toBe("Indonesia");
+  });
 });

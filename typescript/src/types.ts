@@ -156,7 +156,34 @@ export interface EconomicEvent {
 
 export interface EconomicCalendarResponse {
   total: number;
-  items: EconomicEvent[];
+  events: EconomicEvent[];
+}
+
+export interface MacroMapCountryItem {
+  country_code: string;
+  country_name: string;
+  value: number;
+  previous_value?: number;
+  change?: number;
+  rank: number;
+}
+
+export interface MacroMapResponse {
+  indicator: "inflation" | "unemployment" | "gdp" | "interest_rate" | "policy_rate" | "pmi" | string;
+  indicator_name: string;
+  unit: string;
+  period: string;
+  min_value: number;
+  max_value: number;
+  timeline: string[];
+  countries: MacroMapCountryItem[];
+  total: number;
+  source: string;
+}
+
+export interface GetMacroMapOptions extends RequestOptions {
+  indicator?: "inflation" | "unemployment" | "gdp" | "interest_rate" | "policy_rate" | "pmi" | string;
+  period?: string;
 }
 
 export interface GetCalendarOptions extends RequestOptions {

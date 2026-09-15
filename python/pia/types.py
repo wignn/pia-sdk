@@ -154,6 +154,110 @@ class SymbolsResponse:
 
 
 @dataclass
+class EconomicEvent:
+    id: str
+    title: str
+    country: str
+    impact: str
+    date: str
+    actual: Optional[float] = None
+    forecast: Optional[float] = None
+    previous: Optional[float] = None
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> EconomicEvent:
+        return cls(
+            id=str(data.get("id", "")),
+            title=str(data.get("title", "")),
+            country=str(data.get("country", "")),
+            impact=str(data.get("impact", "")),
+            date=str(data.get("date", "")),
+            actual=float(data["actual"]) if data.get("actual") is not None else None,
+            forecast=float(data["forecast"]) if data.get("forecast") is not None else None,
+            previous=float(data["previous"]) if data.get("previous") is not None else None,
+        )
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass
+class EconomicCalendarResponse:
+    total: int
+    events: List[EconomicEvent] = field(default_factory=list)
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> EconomicCalendarResponse:
+        raw = data.get("events") or data.get("items") or []
+        events = [EconomicEvent.from_dict(e) for e in raw if isinstance(e, dict)]
+        return cls(
+            total=int(data.get("total", len(events))),
+            events=events,
+        )
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass
+class MacroMapCountryItem:
+    country_code: str
+    country_name: str
+    value: float
+    rank: int
+    previous_value: Optional[float] = None
+    change: Optional[float] = None
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> MacroMapCountryItem:
+        return cls(
+            country_code=str(data.get("country_code", "")),
+            country_name=str(data.get("country_name", "")),
+            value=float(data.get("value", 0.0)),
+            rank=int(data.get("rank", 0)),
+            previous_value=float(data["previous_value"]) if data.get("previous_value") is not None else None,
+            change=float(data["change"]) if data.get("change") is not None else None,
+        )
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass
+class MacroMapResponse:
+    indicator: str
+    indicator_name: str
+    unit: str
+    period: str
+    min_value: float
+    max_value: float
+    total: int
+    timeline: List[str] = field(default_factory=list)
+    countries: List[MacroMapCountryItem] = field(default_factory=list)
+    source: Optional[str] = None
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> MacroMapResponse:
+        raw_c = data.get("countries") or []
+        countries = [MacroMapCountryItem.from_dict(c) for c in raw_c if isinstance(c, dict)]
+        return cls(
+            indicator=str(data.get("indicator", "")),
+            indicator_name=str(data.get("indicator_name", "")),
+            unit=str(data.get("unit", "")),
+            period=str(data.get("period", "")),
+            min_value=float(data.get("min_value", 0.0)),
+            max_value=float(data.get("max_value", 100.0)),
+            total=int(data.get("total", len(countries))),
+            timeline=[str(t) for t in data.get("timeline", [])],
+            countries=countries,
+            source=data.get("source"),
+        )
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass
 class Candle:
     """OHLCV historical bar."""
 

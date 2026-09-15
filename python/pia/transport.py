@@ -24,7 +24,7 @@ from .errors import (
 from .logger import setup_logger
 from .types import RateLimitInfo
 
-SDK_VERSION = "1.3.2"
+SDK_VERSION = "1.3.3"
 RETRYABLE_STATUS_CODES: Set[int] = {408, 429, 500, 502, 503, 504}
 
 

@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any, Dict, Optional
 
 from ..transport import AsyncTransport, SyncTransport
+from ..types import EconomicCalendarResponse, MacroMapResponse
 
 
 class EconomicResource:
@@ -12,6 +13,23 @@ class EconomicResource:
 
     def __init__(self, transport: SyncTransport) -> None:
         self._transport = transport
+
+    def get_macro_map(
+        self,
+        *,
+        indicator: Optional[str] = None,
+        period: Optional[str] = None,
+    ) -> MacroMapResponse:
+        """Retrieves global Macro Maps choropleth data (Inflation, Unemployment, GDP, Policy Rates, PMI)
+        with sovereign rankings, historical timeline, and delta changes.
+        """
+        params: Dict[str, Any] = {}
+        if indicator:
+            params["indicator"] = indicator
+        if period:
+            params["period"] = period
+        data = self._transport.request("/api/v1/economic/map", method="GET", params=params)
+        return MacroMapResponse.from_dict(data)
 
     def get_calendar(
         self,
@@ -46,6 +64,21 @@ class AsyncEconomicResource:
 
     def __init__(self, transport: AsyncTransport) -> None:
         self._transport = transport
+
+    async def get_macro_map(
+        self,
+        *,
+        indicator: Optional[str] = None,
+        period: Optional[str] = None,
+    ) -> MacroMapResponse:
+        """Asynchronously retrieves global Macro Maps choropleth data."""
+        params: Dict[str, Any] = {}
+        if indicator:
+            params["indicator"] = indicator
+        if period:
+            params["period"] = period
+        data = await self._transport.request("/api/v1/economic/map", method="GET", params=params)
+        return MacroMapResponse.from_dict(data)
 
     async def get_calendar(
         self,
