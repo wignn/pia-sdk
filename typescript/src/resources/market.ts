@@ -114,6 +114,7 @@ export class MarketResource {
     const raw = await this.transport.request<{
       candles?: CandleResponse["candles"];
       items?: CandleResponse["candles"];
+      data?: CandleResponse["candles"];
       has_more?: boolean;
       next_before?: number | null;
     }>(
@@ -123,7 +124,8 @@ export class MarketResource {
       options
     );
 
-    const candleList = raw.candles || raw.items || [];
+    const merged = raw?.data && typeof raw.data === "object" ? raw.data : raw;
+    const candleList = merged.candles || merged.items || merged.data || [];
     return {
       symbol: cleanSymbol,
       timeframe: options?.timeframe || "1m",
