@@ -11,6 +11,9 @@ export class NewsResource {
   /**
    * Fetches curated financial and macro news articles.
    */
+  /**
+   * Fetches curated financial and macro news articles.
+   */
   public async getNews(options?: GetNewsOptions): Promise<NewsFeedResponse> {
     const params = new URLSearchParams();
     if (options?.symbols && options.symbols.length > 0) {
@@ -20,12 +23,16 @@ export class NewsResource {
     if (options?.limit) params.set("limit", String(options.limit));
 
     const query = params.toString() ? `?${params.toString()}` : "";
-    return this.transport.request<NewsFeedResponse>(
+    const raw = await this.transport.request<any>(
       `/api/v1/news${query}`,
       "GET",
       undefined,
       options
     );
+    return {
+      total: raw?.total ?? (raw?.items || []).length,
+      items: raw?.items || raw?.articles || raw?.events || [],
+    };
   }
 
   /**

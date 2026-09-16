@@ -20,7 +20,8 @@ export interface GeoSignalEvent {
 
 export interface GeoSignalsResponse {
   total: number;
-  events: GeoSignalEvent[];
+  events?: GeoSignalEvent[];
+  items?: GeoSignalEvent[];
 }
 
 export interface GeoSignalsMapResponse {
@@ -48,12 +49,18 @@ export class GeosignalsResource {
    * Retrieves active geopolitical risk events and conflict alerts.
    */
   public async getEvents(options?: RequestOptions): Promise<GeoSignalsResponse> {
-    return this.transport.request<GeoSignalsResponse>(
+    const raw = await this.transport.request<any>(
       "/api/v1/geosignals",
       "GET",
       undefined,
       options
     );
+    return {
+      ...raw,
+      total: raw?.total ?? (raw?.items || []).length,
+      items: raw?.items || raw?.events || [],
+      events: raw?.events || raw?.items || [],
+    };
   }
 
   /**

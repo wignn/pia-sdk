@@ -33,7 +33,7 @@ export class FixedIncomeResource {
   }
 
   /** Retrieves the current sovereign rate for a tenor such as 2Y or 10Y. */
-  public async getRate(tenor: string, options?: RequestOptions): Promise<any> {
+  getRate(tenor: string, options?: RequestOptions): Promise<any> {
     if (!tenor || !tenor.trim()) throw new Error("Tenor must be a non-empty string.");
     return this.transport.request<any>(
       `/api/v1/fixed-income/rates/${encodeURIComponent(tenor.trim().toUpperCase())}`,

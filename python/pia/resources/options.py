@@ -33,10 +33,17 @@ class OptionsResource:
             raise ValidationError("Symbol must be a non-empty string.", param_name="symbol")
         clean = symbol.strip().upper()
         encoded = urllib.parse.quote(clean, safe="")
-        data = self._transport.request(
+        raw = self._transport.request(
             "/api/v1/options/gex", method="GET", params={"symbol": clean}
         )
-        return OptionGexResponse.from_dict(data)
+        payload = raw.get("data") if isinstance(raw, dict) else raw
+        if isinstance(raw, dict) and isinstance(payload, list):
+            payload = {"symbol": clean, "items": payload}
+        elif isinstance(payload, dict):
+            payload = {**payload, "symbol": payload.get("symbol") or clean}
+        elif isinstance(raw, dict):
+            payload = {**raw, "symbol": raw.get("symbol") or clean}
+        return OptionGexResponse.from_dict(payload if isinstance(payload, dict) else {"symbol": clean, "data": payload})
 
     def get_summary(self) -> OptionSummaryResponse:
         """Retrieves overall options market activity and put/call sentiment summary."""
@@ -67,10 +74,17 @@ class AsyncOptionsResource:
             raise ValidationError("Symbol must be a non-empty string.", param_name="symbol")
         clean = symbol.strip().upper()
         encoded = urllib.parse.quote(clean, safe="")
-        data = await self._transport.request(
+        raw = await self._transport.request(
             "/api/v1/options/gex", method="GET", params={"symbol": clean}
         )
-        return OptionGexResponse.from_dict(data)
+        payload = raw.get("data") if isinstance(raw, dict) else raw
+        if isinstance(raw, dict) and isinstance(payload, list):
+            payload = {"symbol": clean, "items": payload}
+        elif isinstance(payload, dict):
+            payload = {**payload, "symbol": payload.get("symbol") or clean}
+        elif isinstance(raw, dict):
+            payload = {**raw, "symbol": raw.get("symbol") or clean}
+        return OptionGexResponse.from_dict(payload if isinstance(payload, dict) else {"symbol": clean, "data": payload})
 
     async def get_summary(self) -> OptionSummaryResponse:
         """Asynchronously retrieves overall options market activity and put/call summary."""

@@ -288,6 +288,8 @@ export interface OptionGexResponse {
   major_positive_levels?: Array<{ strike: number; gex: number }>;
   major_negative_levels?: Array<{ strike: number; gex: number }>;
   updated_at?: string;
+  data?: unknown[];
+  items?: unknown[];
 }
 
 export interface OptionSummaryResponse {

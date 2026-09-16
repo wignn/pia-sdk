@@ -25,12 +25,19 @@ export class OptionsResource {
   ): Promise<OptionChainResponse> {
     const clean = normalizeSymbol(symbol);
     const params = new URLSearchParams({ symbol: clean });
-    return this.transport.request<OptionChainResponse>(
+    const raw = await this.transport.request<any>(
       `/api/v1/options/chain?${params.toString()}`,
       "GET",
       undefined,
       options
     );
+    const payload = raw?.data || raw;
+    return {
+      symbol: payload?.symbol || clean,
+      underlying_price: payload?.underlying_price,
+      expirations: payload?.expirations || [],
+      contracts: payload?.contracts || payload?.items || [],
+    };
   }
 
   /**
@@ -44,12 +51,29 @@ export class OptionsResource {
   ): Promise<OptionGexResponse> {
     const clean = normalizeSymbol(symbol);
     const params = new URLSearchParams({ symbol: clean });
-    return this.transport.request<OptionGexResponse>(
+    const raw = await this.transport.request<any>(
       `/api/v1/options/gex?${params.toString()}`,
       "GET",
       undefined,
       options
     );
+    const payload = raw?.data || raw;
+    const rows = Array.isArray(payload) ? payload : payload?.items || payload?.data;
+    const callGex = Array.isArray(rows)
+      ? rows.reduce((sum: number, row: any) => sum + Number(row?.call_gex || 0), 0)
+      : undefined;
+    const putGex = Array.isArray(rows)
+      ? rows.reduce((sum: number, row: any) => sum + Number(row?.put_gex || 0), 0)
+      : undefined;
+    return {
+      ...(Array.isArray(payload) ? {} : payload),
+      symbol: Array.isArray(payload) ? clean : payload?.symbol || clean,
+      net_gex: Array.isArray(payload) ? (callGex || 0) + (putGex || 0) : payload?.net_gex ?? (callGex || 0) + (putGex || 0),
+      total_call_gex: Array.isArray(payload) ? callGex : payload?.total_call_gex,
+      total_put_gex: Array.isArray(payload) ? putGex : payload?.total_put_gex,
+      data: Array.isArray(rows) ? rows : payload?.data,
+      items: Array.isArray(rows) ? rows : payload?.items,
+    } as OptionGexResponse;
   }
 
   /**

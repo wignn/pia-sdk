@@ -569,6 +569,21 @@ class OptionGexResponse:
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> OptionGexResponse:
+        if not isinstance(data, dict):
+            return cls(symbol="")
+        if isinstance(data, dict) and isinstance(data.get("data"), list):
+            data = {**data, "items": data["data"]}
+        # The backend returns raw strike rows; also accept aggregate forms.
+        raw_rows = data.get("data") if isinstance(data.get("data"), list) else data.get("items")
+        if isinstance(raw_rows, list):
+            call_gex = sum(float(row.get("call_gex", 0) or 0) for row in raw_rows if isinstance(row, dict))
+            put_gex = sum(float(row.get("put_gex", 0) or 0) for row in raw_rows if isinstance(row, dict))
+            data = {
+                **data,
+                "total_call_gex": data.get("total_call_gex", call_gex),
+                "total_put_gex": data.get("total_put_gex", put_gex),
+                "net_gex": data.get("net_gex", call_gex + put_gex),
+            }
         def _flt(k: str) -> Optional[float]:
             v = data.get(k)
             return float(v) if v is not None else None
