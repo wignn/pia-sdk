@@ -18,20 +18,29 @@ export class FixedIncomeResource {
       undefined,
       options
     );
-    const points = raw?.points || raw?.data || raw?.bonds || [];
-    return { ...raw, date: raw?.date || raw?.as_of, points: Array.isArray(points) ? points : [] };
+    const payload = raw?.data && typeof raw.data === "object" ? raw.data : raw;
+    const points = payload?.points || payload?.data || payload?.bonds || [];
+    const normalized = Array.isArray(points)
+      ? points.map((p: any) => ({
+          tenor: p.tenor || p.symbol || p.name,
+          yield: Number(p.yield ?? p.yield_value ?? p.value),
+          date: p.date,
+        })).filter((p: any) => p.tenor && Number.isFinite(p.yield))
+      : [];
+    return { ...payload, date: payload?.date || payload?.as_of, points: normalized, spreads: payload?.spreads || [] };
   }
 
   /**
    * Retrieves sovereign yield spreads (2Y-10Y, 3M-10Y curve steepness indicators).
    */
   public async getSpreads(options?: RequestOptions): Promise<any> {
-    return this.transport.request<any>(
+    const raw = await this.transport.request<any>(
       "/api/v1/fixed-income/spreads",
       "GET",
       undefined,
       options
     );
+    return raw?.data && typeof raw.data === "object" ? raw.data : raw;
   }
 
   /** Retrieves the current sovereign rate for a tenor such as 2Y or 10Y. */
