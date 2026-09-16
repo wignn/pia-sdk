@@ -80,11 +80,15 @@ export class OptionsResource {
    * Retrieves overall options market activity and put/call sentiment summary.
    */
   public async getSummary(options?: RequestOptions): Promise<OptionSummaryResponse> {
-    return this.transport.request<OptionSummaryResponse>(
+    const raw = await this.transport.request<any>(
       "/api/v1/options/summary",
       "GET",
       undefined,
       options
     );
+    const payload = raw?.data && typeof raw.data === "object" ? raw.data : raw;
+    const snapshots = Array.isArray(payload) ? payload : payload?.items || payload?.data || [];
+    const first = Array.isArray(snapshots) ? snapshots[0] : snapshots;
+    return first && typeof first === "object" ? { ...first, data: snapshots } : { data: snapshots } as OptionSummaryResponse;
   }
 }

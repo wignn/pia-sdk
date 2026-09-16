@@ -306,6 +306,7 @@ export interface OptionSummaryResponse {
   total_open_interest?: number;
   put_call_ratio?: number;
   most_active_symbols?: Array<{ symbol: string; volume: number }>;
+  data?: OptionSummaryResponse[] | OptionSummaryResponse;
 }
 
 export interface FearGreedData {
