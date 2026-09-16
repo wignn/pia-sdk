@@ -27,7 +27,21 @@ export class FixedIncomeResource {
           date: p.date,
         })).filter((p: any) => p.tenor && Number.isFinite(p.yield))
       : [];
-    return { ...payload, date: payload?.date || payload?.as_of, points: normalized, spreads: payload?.spreads || [] };
+    const spreads = Array.isArray(payload?.spreads) ? payload.spreads : [];
+    const findSpread = (short: string, long: string) => {
+      const row = spreads.find((item: any) => String(item?.spread || '').toUpperCase().includes(`${short}-${long}`));
+      return row?.value !== undefined ? Number(row.value) : undefined;
+    };
+    const spread2Y10Y = findSpread("2Y", "10Y");
+    const spread3M10Y = findSpread("3M", "10Y");
+    return {
+      date: payload?.date,
+      points: normalized,
+      spreads,
+      spread2Y10Y,
+      spread3M10Y,
+      total: normalized.length,
+    };
   }
 
   /**

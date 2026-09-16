@@ -216,6 +216,9 @@ export interface YieldCurveResponse {
   date?: string;
   points: YieldCurvePoint[];
   spreads?: Array<{ spread: string; value: number; date?: string }>;
+  spread2Y10Y?: number;
+  spread3M10Y?: number;
+  total?: number;
 }
 
 export interface MarketInsight {
