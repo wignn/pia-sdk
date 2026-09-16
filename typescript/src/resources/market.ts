@@ -124,8 +124,9 @@ export class MarketResource {
       options
     );
 
-    const merged = raw?.data && typeof raw.data === "object" ? raw.data : raw;
-    const candleList = merged.candles || merged.items || merged.data || [];
+    const merged: any = raw?.data && typeof raw.data === "object" ? raw.data : raw;
+    const candleList: CandleResponse["candles"] =
+      merged?.candles || merged?.items || (Array.isArray(merged) ? merged : []);
     return {
       symbol: cleanSymbol,
       timeframe: options?.timeframe || "1m",

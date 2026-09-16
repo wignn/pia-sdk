@@ -54,7 +54,7 @@ export class FixedIncomeResource {
       undefined,
       options
     );
-    return raw?.data && typeof raw.data === "object" ? raw.data : raw;
+    return raw?.data !== undefined ? raw.data : raw;
   }
 
   /** Retrieves the current sovereign rate for a tenor such as 2Y or 10Y. */
