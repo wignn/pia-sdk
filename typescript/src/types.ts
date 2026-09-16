@@ -28,6 +28,9 @@ export interface MarketPrice {
   low_24h?: number;
   change_24h_pct?: number;
   volume_24h?: number;
+  volume?: number;
+  volume_type?: "exchange" | "tick" | "unavailable";
+  volume_available?: boolean;
   asset_type?: "fx" | "crypto" | "equity" | "commodity" | "index" | string;
   session_open?: boolean;
   timestamp?: number;

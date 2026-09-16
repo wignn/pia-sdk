@@ -12,12 +12,14 @@ export class FixedIncomeResource {
    * Retrieves US Treasury sovereign bond yield curve structure across all standard tenors.
    */
   public async getYieldCurve(options?: RequestOptions): Promise<YieldCurveResponse> {
-    return this.transport.request<YieldCurveResponse>(
+    const raw = await this.transport.request<any>(
       "/api/v1/fixed-income/yield-curve",
       "GET",
       undefined,
       options
     );
+    const points = raw?.points || raw?.data || raw?.bonds || [];
+    return { ...raw, date: raw?.date || raw?.as_of, points: Array.isArray(points) ? points : [] };
   }
 
   /**

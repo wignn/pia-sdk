@@ -38,12 +38,18 @@ export class EnergyResource {
    * Retrieves energy market dashboard including WTI/Brent crude prices, crack spreads, and storage.
    */
   public async getDashboard(options?: RequestOptions): Promise<EnergyDashboardResponse> {
-    return this.transport.request<EnergyDashboardResponse>(
+    const raw = await this.transport.request<any>(
       "/api/v1/energy/dashboard",
       "GET",
       undefined,
       options
     );
+    const items = raw?.items || raw?.data || [];
+    const find = (terms: string[]) => items.find((x: any) => terms.some((t) => String(x?.series_id || x?.name || '').toLowerCase().includes(t)));
+    const wti = find(['wti']);
+    const brent = find(['brent']);
+    const gas = find(['henry', 'natural gas']);
+    return { ...raw, crude_oil: { ...raw?.crude_oil, wti_price: raw?.crude_oil?.wti_price ?? wti?.latest_value, brent_price: raw?.crude_oil?.brent_price ?? brent?.latest_value }, natural_gas: { ...raw?.natural_gas, henry_hub_price: raw?.natural_gas?.henry_hub_price ?? gas?.latest_value } };
   }
 
   /**

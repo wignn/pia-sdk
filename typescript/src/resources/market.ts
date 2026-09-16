@@ -42,12 +42,13 @@ export class MarketResource {
    * Retrieves current multi-asset price snapshot for all tracked global symbols.
    */
   public async getPrices(options?: RequestOptions): Promise<MarketPricesResponse> {
-    return this.transport.request<MarketPricesResponse>(
-      "/api/v1/market/prices",
-      "GET",
-      undefined,
-      options
-    );
+    const raw = await this.transport.request<MarketPricesResponse>(
+        "/api/v1/market/prices",
+        "GET",
+        undefined,
+        options
+      );
+      return { ...raw, items: Array.isArray(raw?.items) ? raw.items : [] };
   }
 
   /** Retrieves the latest quote for a single symbol. */
@@ -138,12 +139,19 @@ export class MarketResource {
    */
   public async getOrderBook(symbol: string, options?: RequestOptions): Promise<OrderBook> {
     const cleanSymbol = normalizeSymbol(symbol);
-    return this.transport.request<OrderBook>(
+    const raw = await this.transport.request<any>(
       `/api/v1/market/orderbook/${encodeURIComponent(cleanSymbol)}`,
       "GET",
       undefined,
       options
     );
+    const data = raw?.data && typeof raw.data === "object" ? raw.data : raw;
+    return {
+      symbol: data?.symbol || cleanSymbol,
+      bids: Array.isArray(data?.bids) ? data.bids : [],
+      asks: Array.isArray(data?.asks) ? data.asks : [],
+      timestamp: Number(data?.timestamp || Date.now()),
+    };
   }
 
   /**

@@ -55,12 +55,14 @@ export class MacroResource {
     }
 
     const clean = symbol.trim().toUpperCase();
-    return this.transport.request<CotReportResponse>(
+    const raw = await this.transport.request<any>(
       `/api/v1/cot/symbol/${encodeURIComponent(clean)}`,
       "GET",
       undefined,
       options
     );
+    const reports = raw?.reports || raw?.data || raw?.items || [];
+    return { ...raw, symbol: clean, reports: Array.isArray(reports) ? reports : [] };
   }
 
   /**
@@ -77,11 +79,12 @@ export class MacroResource {
     }
 
     const clean = bank.trim().toLowerCase();
-    return this.transport.request<CentralBankStanceResponse>(
+    const raw = await this.transport.request<any>(
       `/api/v1/central-banks/${encodeURIComponent(clean)}/stance`,
       "GET",
       undefined,
       options
     );
+    return raw?.data && typeof raw.data === "object" ? { ...raw.data, bank: raw.data.bank || clean } : raw;
   }
 }

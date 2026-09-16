@@ -44,12 +44,14 @@ export class SecResource {
     if (options?.since) params.set("since", options.since);
 
     const query = params.toString() ? `?${params.toString()}` : "";
-    return this.transport.request<SecFilingsResponse>(
+    const raw = await this.transport.request<any>(
       `/api/v1/sec/filings${query}`,
       "GET",
       undefined,
       options
     );
+    const items = Array.isArray(raw) ? raw : raw?.items || raw?.filings || raw?.data || [];
+    return { total: raw?.total ?? items.length, items: Array.isArray(items) ? items : [], has_more: raw?.has_more };
   }
 
   /**

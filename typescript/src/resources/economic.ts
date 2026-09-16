@@ -42,16 +42,13 @@ export class EconomicResource {
 
     const query = params.toString() ? `?${params.toString()}` : "";
     const raw = await this.transport.request<any>(
-      `/api/v1/economic/calendar${query}`,
+      "/api/v1/economic/calendar" + query,
       "GET",
       undefined,
       options
     );
-    return {
-      total: raw?.total ?? (raw?.items || []).length,
-      events: raw?.events || raw?.items || [],
-      items: raw?.items,
-    };
+    const events = raw?.events || raw?.items || raw?.data || [];
+    return { ...raw, events: Array.isArray(events) ? events : [], items: Array.isArray(events) ? events : [], total: raw?.total ?? (Array.isArray(events) ? events.length : 0) };
   }
 
   /**

@@ -67,23 +67,25 @@ export class GeosignalsResource {
    * Retrieves global geopolitical risk map layer data and maritime chokepoints status.
    */
   public async getMap(options?: RequestOptions): Promise<GeoSignalsMapResponse> {
-    return this.transport.request<GeoSignalsMapResponse>(
+    const raw = await this.transport.request<any>(
       "/api/v1/geosignals/map",
       "GET",
       undefined,
       options
     );
+    return { ...raw, layers: raw?.layers || raw?.items || raw?.data || [] };
   }
 
   /**
    * Retrieves mapped asset vulnerabilities and commodity exposure to current geopolitical tensions.
    */
   public async getAssetImpacts(options?: RequestOptions): Promise<GeoSignalsAssetImpactResponse> {
-    return this.transport.request<GeoSignalsAssetImpactResponse>(
+    const raw = await this.transport.request<any>(
       "/api/v1/geosignals/assets",
       "GET",
       undefined,
       options
     );
+    return { ...raw, assets: raw?.assets || raw?.items || raw?.data || [] };
   }
 }
