@@ -180,9 +180,15 @@ export class RealtimeClient extends TypedEventEmitter {
           new AuthenticationError(payload.message || "Unauthorized WebSocket message.")
         );
       } else {
+        const errorDetail =
+          typeof payload.error === "object" && payload.error !== null
+            ? (payload.error as any).msg ||
+              (payload.error as any).message ||
+              JSON.stringify(payload.error)
+            : String(payload.error);
         this.emit(
           "error",
-          new NetworkError(payload.message || `Server reported error: ${payload.error}`)
+          new NetworkError(payload.message || `Server reported error: ${errorDetail}`)
         );
       }
     }
