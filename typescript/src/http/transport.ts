@@ -15,7 +15,9 @@ import {
 } from "../errors";
 import type { RateLimitInfo, RequestOptions } from "../types";
 
-const RETRYABLE_STATUS_CODES = new Set([408, 429, 500, 502, 503, 504]);
+const RETRYABLE_STATUS_CODES = new Set([
+  408, 429, 500, 502, 503, 504, 520, 521, 522, 523, 524, 525, 526, 530
+]);
 const SDK_VERSION = "1.3.11";
 
 export class HttpTransport {
@@ -121,10 +123,17 @@ export class HttpTransport {
           errorJson && typeof errorJson === "object"
             ? (errorJson as Record<string, unknown>)
             : undefined;
-        const errorMessage =
+        const isHtml =
+          errorText.trim().startsWith("<!DOCTYPE") ||
+          errorText.trim().startsWith("<html");
+        const rawErrorMessage =
           (typeof errorObject?.message === "string" && errorObject.message) ||
           (typeof errorObject?.error === "string" && errorObject.error) ||
-          (errorText ? errorText.slice(0, 200) : `HTTP ${status}`);
+          (typeof (errorObject as any)?.title === "string" && (errorObject as any).title) ||
+          (errorText && !isHtml ? errorText.slice(0, 200) : `HTTP ${status}`);
+        const errorMessage = isHtml
+          ? `Edge tunnel gateway temporarily unavailable (HTTP ${status})`
+          : rawErrorMessage;
 
         const isRetryable = RETRYABLE_STATUS_CODES.has(status) && attempt <= maxRetries;
 
