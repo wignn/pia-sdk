@@ -609,6 +609,50 @@ class OptionSummaryResponse:
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> OptionSummaryResponse:
+        rows = (
+            data.get("data")
+            if isinstance(data.get("data"), list)
+            else data.get("items")
+            if isinstance(data.get("items"), list)
+            else []
+        )
+        if rows and data.get("total_volume") is None and data.get("total_open_interest") is None:
+            active = [
+                {
+                    "symbol": r.get("symbol"),
+                    "volume": float(r.get("total_volume") or r.get("volume") or 0),
+                    "pcr": float(r.get("put_call_ratio") or r.get("pcr") or 0),
+                }
+                for r in rows
+                if isinstance(r, dict) and r.get("symbol")
+            ]
+            active.sort(key=lambda x: x["volume"], reverse=True)
+            tot_vol = sum(
+                float(r.get("total_volume") or r.get("volume") or 0)
+                for r in rows
+                if isinstance(r, dict)
+            )
+            tot_oi = sum(
+                float(r.get("total_open_interest") or r.get("open_interest") or 0)
+                for r in rows
+                if isinstance(r, dict)
+            )
+            weighted_pcr = sum(
+                float(r.get("put_call_ratio") or 0) * float(r.get("total_volume") or 0)
+                for r in rows
+                if isinstance(r, dict)
+            )
+            pcr = (
+                (weighted_pcr / tot_vol)
+                if tot_vol > 0
+                else (rows[0].get("put_call_ratio") if rows else None)
+            )
+            return cls(
+                total_volume=int(tot_vol) if tot_vol > 0 else None,
+                total_open_interest=int(tot_oi) if tot_oi > 0 else None,
+                put_call_ratio=float(pcr) if pcr is not None else None,
+                most_active_symbols=active,
+            )
         pcr = data.get("put_call_ratio")
         vol = data.get("total_volume")
         oi = data.get("total_open_interest")

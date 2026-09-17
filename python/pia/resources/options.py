@@ -10,6 +10,15 @@ from ..transport import AsyncTransport, SyncTransport
 from ..types import OptionChainResponse, OptionGexResponse, OptionSummaryResponse
 
 
+def _resolve_underlying(symbol: str) -> str:
+    clean = symbol.strip().upper()
+    if clean in ("XAUUSD", "GOLD"):
+        return "GLD"
+    if clean in ("XAGUSD", "SILVER"):
+        return "SLV"
+    return clean
+
+
 class OptionsResource:
     """Synchronous Options & Derivatives Analytics resource."""
 
@@ -20,7 +29,7 @@ class OptionsResource:
         """Fetches the real-time option chain for an underlying asset symbol."""
         if not symbol or not symbol.strip():
             raise ValidationError("Symbol must be a non-empty string.", param_name="symbol")
-        clean = symbol.strip().upper()
+        clean = _resolve_underlying(symbol)
         encoded = urllib.parse.quote(clean, safe="")
         data = self._transport.request(
             "/api/v1/options/chain", method="GET", params={"symbol": clean}
@@ -31,7 +40,7 @@ class OptionsResource:
         """Fetches Gamma Exposure (GEX) profile and zero-gamma inflection levels."""
         if not symbol or not symbol.strip():
             raise ValidationError("Symbol must be a non-empty string.", param_name="symbol")
-        clean = symbol.strip().upper()
+        clean = _resolve_underlying(symbol)
         encoded = urllib.parse.quote(clean, safe="")
         raw = self._transport.request(
             "/api/v1/options/gex", method="GET", params={"symbol": clean}
@@ -61,7 +70,7 @@ class AsyncOptionsResource:
         """Asynchronously fetches real-time option chain for an underlying asset symbol."""
         if not symbol or not symbol.strip():
             raise ValidationError("Symbol must be a non-empty string.", param_name="symbol")
-        clean = symbol.strip().upper()
+        clean = _resolve_underlying(symbol)
         encoded = urllib.parse.quote(clean, safe="")
         data = await self._transport.request(
             "/api/v1/options/chain", method="GET", params={"symbol": clean}
@@ -72,7 +81,7 @@ class AsyncOptionsResource:
         """Asynchronously fetches Gamma Exposure (GEX) profile."""
         if not symbol or not symbol.strip():
             raise ValidationError("Symbol must be a non-empty string.", param_name="symbol")
-        clean = symbol.strip().upper()
+        clean = _resolve_underlying(symbol)
         encoded = urllib.parse.quote(clean, safe="")
         raw = await self._transport.request(
             "/api/v1/options/gex", method="GET", params={"symbol": clean}
