@@ -66,6 +66,24 @@ export class MacroResource {
   }
 
   /**
+   * Fetches the global macroeconomic map from geo-economi core.
+   */
+  public async getMap(options?: {
+    indicator?: string;
+    period?: string;
+  }): Promise<any> {
+    const params = new URLSearchParams();
+    if (options?.indicator) params.set("indicator", options.indicator);
+    if (options?.period) params.set("period", options.period);
+    const query = params.toString() ? `?${params.toString()}` : "";
+    try {
+      return await this.transport.request<any>(`/api/v1/macro/map${query}`, "GET");
+    } catch {
+      return await this.transport.request<any>(`/api/v1/economic/map${query}`, "GET");
+    }
+  }
+
+  /**
    * Fetches monetary policy stance and interest rate assessment for a central bank.
    *
    * @param bank Bank code (e.g. "fed", "ecb", "boj", "bi", "boe")

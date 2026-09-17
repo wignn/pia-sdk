@@ -24,12 +24,21 @@ export class EconomicResource {
     if (options?.period) params.set("period", options.period);
 
     const query = params.toString() ? `?${params.toString()}` : "";
-    return this.transport.request<MacroMapResponse>(
-      `/api/v1/economic/map${query}`,
-      "GET",
-      undefined,
-      options
-    );
+    try {
+      return await this.transport.request<any>(
+        `/api/v1/macro/map${query}`,
+        "GET",
+        undefined,
+        options
+      );
+    } catch {
+      return await this.transport.request<any>(
+        `/api/v1/economic/map${query}`,
+        "GET",
+        undefined,
+        options
+      );
+    }
   }
 
   /**
