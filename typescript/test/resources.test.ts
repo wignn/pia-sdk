@@ -154,4 +154,38 @@ describe("Comprehensive Intelligence Resources (Options, Macro, Social, Intellig
     expect(mapData.countries[0].value).toBe(3.26);
     expect(mapData.countries[1].country_name).toBe("Indonesia");
   });
+
+  it("handles macro map response with nullable min_value and max_value", async () => {
+    const config = resolveConfig({
+      apiKey: "wi_live_test_key",
+      fetch: (async (url: string) => {
+        if (url.includes("/api/v1/macro/map")) {
+          return new Response(
+            JSON.stringify({
+              indicator: "gdp",
+              indicator_name: "GDP Growth",
+              unit: "Percent",
+              period: "2026-Q2",
+              min_value: null,
+              max_value: null,
+              timeline: [],
+              total: 0,
+              countries: [],
+              source: "pia-macro",
+            }),
+            { status: 200, headers: { "content-type": "application/json" } }
+          );
+        }
+        return new Response("Not found", { status: 404 });
+      }) as any,
+    });
+
+    const transport = new HttpTransport(config);
+    const economic = new EconomicResource(transport);
+
+    const mapData = await economic.getMacroMap({ indicator: "gdp", period: "2026-Q2" });
+    expect(mapData.min_value).toBeNull();
+    expect(mapData.max_value).toBeNull();
+    expect(mapData.total).toBe(0);
+  });
 });

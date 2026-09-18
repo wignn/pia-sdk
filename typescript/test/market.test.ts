@@ -125,4 +125,27 @@ describe("Market Resource", () => {
     expect(requestedUrl).toContain("since=1720000000");
     expect(res.symbol).toBe("BTCUSDT");
   });
+
+  it("supports 30m and 1w timeframes for candlestick request", async () => {
+    let lastUrl = "";
+    const mockFetch = async (url: string) => {
+      lastUrl = url;
+      return new Response(
+        JSON.stringify({
+          symbol: "BTCUSDT",
+          timeframe: "30m",
+          count: 0,
+          candles: [],
+        }),
+        { status: 200 }
+      );
+    };
+
+    const client = new PiaClient({ apiKey: "test", fetch: mockFetch as any });
+    await client.market.getCandles("BTCUSDT", { timeframe: "30m" });
+    expect(lastUrl).toContain("resolution=30m");
+
+    await client.market.getCandles("BTCUSDT", { timeframe: "1w" });
+    expect(lastUrl).toContain("resolution=1w");
+  });
 });

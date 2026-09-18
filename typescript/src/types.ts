@@ -2,7 +2,7 @@
  * Official PIA SDK - Type Definitions & Contracts
  */
 
-export type Timeframe = "1m" | "5m" | "15m" | "1h" | "4h" | "1d";
+export type Timeframe = "1m" | "5m" | "15m" | "30m" | "1h" | "4h" | "1d" | "1w";
 
 export interface RateLimitInfo {
   limit?: number;
@@ -182,12 +182,12 @@ export interface MacroMapResponse {
   indicator_name: string;
   unit: string;
   period: string;
-  min_value: number;
-  max_value: number;
+  min_value: number | null;
+  max_value: number | null;
   timeline: string[];
   countries: MacroMapCountryItem[];
   total: number;
-  source: string;
+  source?: string | null;
   is_live?: boolean;
   updated_at?: string;
   unavailable_reason?: string;

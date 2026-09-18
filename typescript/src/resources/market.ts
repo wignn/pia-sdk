@@ -97,7 +97,7 @@ export class MarketResource {
    * Fetches historical OHLCV candlestick bars for a given symbol and timeframe.
    *
    * @param symbol Alphanumeric instrument symbol (e.g. "XAUUSD", "BTCUSDT", "BBCA")
-   * @param options Timeframe ("1m", "5m", "15m", "1h", "4h", "1d"), limit, timestamps
+   * @param options Timeframe ("1m", "5m", "15m", "30m", "1h", "4h", "1d", "1w"), limit, timestamps
    */
   public async getCandles(
     symbol: string,

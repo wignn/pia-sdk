@@ -182,9 +182,45 @@ class TestAllResources(unittest.TestCase):
         )
         res = client.economic.get_macro_map(indicator="inflation", period="2026-08")
         self.assertEqual(res.indicator, "inflation")
+        self.assertEqual(res.min_value, 0.5)
+        self.assertEqual(res.max_value, 30.0)
         self.assertEqual(res.countries[0].country_code, "CA")
         self.assertEqual(res.countries[0].value, 3.0)
         self.assertEqual(res.countries[1].country_name, "Indonesia")
+
+    def test_macro_map_preserves_none_min_max_values(self):
+        from pia.types import MacroMapResponse
+
+        # Explicit None in payload
+        data_none = {
+            "indicator": "unemployment",
+            "indicator_name": "Unemployment Rate",
+            "unit": "Percent",
+            "period": "2026-08",
+            "min_value": None,
+            "max_value": None,
+            "total": 0,
+            "timeline": [],
+            "countries": [],
+        }
+        res_none = MacroMapResponse.from_dict(data_none)
+        self.assertIsNone(res_none.min_value)
+        self.assertIsNone(res_none.max_value)
+        self.assertEqual(res_none.total, 0)
+
+        # Missing keys in payload
+        data_missing = {
+            "indicator": "pmi",
+            "indicator_name": "Manufacturing PMI",
+            "unit": "Index",
+            "period": "2026-08",
+            "timeline": [],
+            "countries": [],
+        }
+        res_missing = MacroMapResponse.from_dict(data_missing)
+        self.assertIsNone(res_missing.min_value)
+        self.assertIsNone(res_missing.max_value)
+        self.assertEqual(res_missing.total, 0)
 
 
 if __name__ == "__main__":

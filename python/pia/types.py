@@ -233,9 +233,9 @@ class MacroMapResponse:
     indicator_name: str
     unit: str
     period: str
-    min_value: float
-    max_value: float
-    total: int
+    min_value: Optional[float] = None
+    max_value: Optional[float] = None
+    total: int = 0
     timeline: List[str] = field(default_factory=list)
     countries: List[MacroMapCountryItem] = field(default_factory=list)
     source: Optional[str] = None
@@ -244,13 +244,15 @@ class MacroMapResponse:
     def from_dict(cls, data: Dict[str, Any]) -> MacroMapResponse:
         raw_c = data.get("countries") or []
         countries = [MacroMapCountryItem.from_dict(c) for c in raw_c if isinstance(c, dict)]
+        min_val = data.get("min_value")
+        max_val = data.get("max_value")
         return cls(
             indicator=str(data.get("indicator", "")),
             indicator_name=str(data.get("indicator_name", "")),
             unit=str(data.get("unit", "")),
             period=str(data.get("period", "")),
-            min_value=float(data.get("min_value", 0.0)),
-            max_value=float(data.get("max_value", 100.0)),
+            min_value=float(min_val) if min_val is not None else None,
+            max_value=float(max_val) if max_val is not None else None,
             total=int(data.get("total", len(countries))),
             timeline=[str(t) for t in data.get("timeline", [])],
             countries=countries,
