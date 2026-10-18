@@ -23,6 +23,7 @@
 |---|---|---|---|---|---|
 | **`@piaa/sdk`** | TypeScript / JavaScript | **`1.3.7`** | [npm](https://www.npmjs.com/package/@piaa/sdk) | [`/typescript`](./typescript) | ![npm](https://img.shields.io/npm/v/@piaa/sdk) |
 | **`piaa-sdk`** | Python (Sync & Async) | **`1.3.7`** | [PyPI](https://pypi.org/project/piaa-sdk/) | [`/python`](./python) | ![PyPI](https://img.shields.io/pypi/v/piaa-sdk) |
+| **`pia-sdk`** | Rust | **`0.1.0`** | [crates.io](https://crates.io/crates/pia-sdk) | [`/rust`](./rust) | ![crates.io](https://img.shields.io/crates/v/pia-sdk) |
 
 ---
 

@@ -30,6 +30,10 @@ venv/
 *.swp
 *.swo
 
+# Rust
+target/
+Cargo.lock
+
 # OS & Environment
 .DS_Store
 Thumbs.db

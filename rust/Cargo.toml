@@ -1,0 +1,19 @@
+[package]
+name = "pia-sdk"
+version = "0.1.0"
+edition = "2021"
+description = "Official Rust client SDK for the PIA Market Intelligence Platform"
+license = "MIT"
+repository = "https://github.com/wignn/pia-sdk"
+homepage = "https://pia.wign.dev"
+readme = "README.md"
+keywords = ["finance", "market-data", "crypto", "trading", "sdk"]
+categories = ["api-bindings", "web-programming::http-client"]
+
+[dependencies]
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+[dev-dependencies]
+tokio = { version = "1", features = ["rt", "macros"] }
