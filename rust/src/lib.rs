@@ -1,18 +1,24 @@
 //! Official PIA Rust SDK
+use futures_util::{SinkExt, StreamExt};
 use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION};
 use reqwest::{Client, Method, StatusCode};
 use serde::de::DeserializeOwned;
 use std::env;
 use std::fmt;
+use tokio_tungstenite::connect_async;
+use tokio_tungstenite::tungstenite::Message;
 
 pub const DEFAULT_BASE_URL: &str = "https://api-engine.wign.dev";
+pub const DEFAULT_WS_URL: &str = "wss://api-engine.wign.dev/api/v1/ws";
 
 #[derive(Debug)]
 pub enum PiaError {
     MissingApiKey,
     Network(reqwest::Error),
+    WebSocket(tokio_tungstenite::tungstenite::Error),
     Api { status: StatusCode, message: String },
     Json(serde_json::Error),
+    AuthFailed(String),
 }
 
 impl fmt::Display for PiaError {
@@ -20,8 +26,10 @@ impl fmt::Display for PiaError {
         match self {
             Self::MissingApiKey => write!(f, "PIA API key not provided and PIA_API_KEY env not set"),
             Self::Network(e) => write!(f, "Network error: {e}"),
+            Self::WebSocket(e) => write!(f, "WebSocket error: {e}"),
             Self::Api { status, message } => write!(f, "API error ({status}): {message}"),
             Self::Json(e) => write!(f, "JSON error: {e}"),
+            Self::AuthFailed(msg) => write!(f, "Authentication failed: {msg}"),
         }
     }
 }
@@ -34,6 +42,12 @@ impl From<reqwest::Error> for PiaError {
     }
 }
 
+impl From<tokio_tungstenite::tungstenite::Error> for PiaError {
+    fn from(e: tokio_tungstenite::tungstenite::Error) -> Self {
+        Self::WebSocket(e)
+    }
+}
+
 impl From<serde_json::Error> for PiaError {
     fn from(e: serde_json::Error) -> Self {
         Self::Json(e)
@@ -43,6 +57,7 @@ impl From<serde_json::Error> for PiaError {
 #[derive(Clone, Debug)]
 pub struct PiaClient {
     base_url: String,
+    ws_url: String,
     api_key: String,
     http: Client,
 }
@@ -62,6 +77,10 @@ impl PiaClient {
 
     pub fn base_url(&self) -> &str {
         &self.base_url
+    }
+
+    pub fn ws_url(&self) -> &str {
+        &self.ws_url
     }
 
     pub fn api_key(&self) -> &str {
@@ -101,7 +120,8 @@ impl PiaClient {
     }
 
     pub async fn get_price(&self, symbol: &str) -> Result<serde_json::Value, PiaError> {
-        self.request(Method::GET, &format!("/api/v1/market/prices/{symbol}"), None, None).await
+        let clean = symbol.trim().to_uppercase();
+        self.request(Method::GET, &format!("/api/v1/market/prices/{clean}"), None, None).await
     }
 
     pub async fn get_symbols(&self) -> Result<serde_json::Value, PiaError> {
@@ -114,12 +134,19 @@ impl PiaClient {
         timeframe: &str,
         limit: Option<u32>,
     ) -> Result<serde_json::Value, PiaError> {
+        let clean = symbol.trim().to_uppercase();
         let limit_str = limit.map(|l| l.to_string());
-        let mut query = vec![("symbol", symbol), ("timeframe", timeframe)];
+        let mut query = vec![("resolution", timeframe)];
         if let Some(ref l) = limit_str {
             query.push(("limit", l.as_str()));
         }
-        self.request(Method::GET, "/api/v1/market/candles", Some(&query), None).await
+        self.request(
+            Method::GET,
+            &format!("/api/v1/market/history/{clean}"),
+            Some(&query),
+            None,
+        )
+        .await
     }
 
     pub async fn get_news(&self) -> Result<serde_json::Value, PiaError> {
@@ -129,12 +156,96 @@ impl PiaClient {
     pub async fn get_fear_greed(&self) -> Result<serde_json::Value, PiaError> {
         self.request(Method::GET, "/api/v1/fear-greed", None, None).await
     }
+
+    /// Connects to the Realtime WebSocket gateway and completes in-band authentication.
+    pub async fn connect_realtime(&self) -> Result<PiaRealtimeStream, PiaError> {
+        let mut target_url = self.ws_url.clone();
+        if target_url.starts_with("http://") {
+            target_url = target_url.replacen("http://", "ws://", 1);
+        } else if target_url.starts_with("https://") {
+            target_url = target_url.replacen("https://", "wss://", 1);
+        }
+
+        let (mut ws_stream, _) = connect_async(&target_url).await?;
+
+        // 1. Wait for server's initial connected frame
+        while let Some(msg) = ws_stream.next().await {
+            let msg = msg?;
+            if let Message::Text(text) = msg {
+                if let Ok(v) = serde_json::from_str::<serde_json::Value>(&text) {
+                    if v.get("event").and_then(|e| e.as_str()) == Some("connected") {
+                        break;
+                    }
+                }
+            }
+        }
+
+        // 2. Send in-band auth frame
+        let auth_payload = serde_json::json!({
+            "action": "auth",
+            "api_key": &self.api_key
+        });
+        ws_stream.send(Message::Text(auth_payload.to_string().into())).await?;
+
+        // 3. Await authenticated confirmation
+        while let Some(msg) = ws_stream.next().await {
+            let msg = msg?;
+            if let Message::Text(text) = msg {
+                if let Ok(v) = serde_json::from_str::<serde_json::Value>(&text) {
+                    if v.get("event").and_then(|e| e.as_str()) == Some("authenticated") {
+                        return Ok(PiaRealtimeStream { ws: ws_stream });
+                    }
+                    if let Some(err) = v.get("error") {
+                        return Err(PiaError::AuthFailed(err.to_string()));
+                    }
+                }
+            }
+        }
+
+        Err(PiaError::AuthFailed("WebSocket disconnected before authentication".into()))
+    }
+}
+
+pub struct PiaRealtimeStream {
+    ws: tokio_tungstenite::WebSocketStream<tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>>,
+}
+
+impl PiaRealtimeStream {
+    /// Subscribes to real-time market trade ticks for specified symbols.
+    pub async fn subscribe(&mut self, symbols: &[&str]) -> Result<(), PiaError> {
+        let payload = serde_json::json!({
+            "action": "subscribe",
+            "symbols": symbols
+        });
+        self.ws.send(Message::Text(payload.to_string().into())).await?;
+        Ok(())
+    }
+
+    /// Reads the next JSON message from the realtime stream.
+    pub async fn next_event(&mut self) -> Result<Option<serde_json::Value>, PiaError> {
+        while let Some(msg) = self.ws.next().await {
+            match msg? {
+                Message::Text(text) => {
+                    if let Ok(v) = serde_json::from_str::<serde_json::Value>(&text) {
+                        return Ok(Some(v));
+                    }
+                }
+                Message::Ping(data) => {
+                    self.ws.send(Message::Pong(data)).await?;
+                }
+                Message::Close(_) => return Ok(None),
+                _ => {}
+            }
+        }
+        Ok(None)
+    }
 }
 
 #[derive(Default)]
 pub struct PiaClientBuilder {
     api_key: Option<String>,
     base_url: Option<String>,
+    ws_url: Option<String>,
 }
 
 impl PiaClientBuilder {
@@ -148,12 +259,27 @@ impl PiaClientBuilder {
         self
     }
 
+    pub fn ws_url(mut self, url: impl Into<String>) -> Self {
+        self.ws_url = Some(url.into());
+        self
+    }
+
     pub fn build(self) -> Result<PiaClient, PiaError> {
         let api_key = match self.api_key {
             Some(k) if !k.trim().is_empty() => k,
             _ => env::var("PIA_API_KEY")
                 .or_else(|_| env::var("ATSLD_API_KEY"))
                 .map_err(|_| PiaError::MissingApiKey)?,
+        };
+
+        let base_url = match self.base_url {
+            Some(u) if !u.trim().is_empty() => u,
+            _ => env::var("PIA_BASE_URL").unwrap_or_else(|_| DEFAULT_BASE_URL.to_string()),
+        };
+
+        let ws_url = match self.ws_url {
+            Some(w) if !w.trim().is_empty() => w,
+            _ => env::var("PIA_WS_URL").unwrap_or_else(|_| DEFAULT_WS_URL.to_string()),
         };
 
         let mut headers = HeaderMap::new();
@@ -171,7 +297,8 @@ impl PiaClientBuilder {
             .map_err(PiaError::Network)?;
 
         Ok(PiaClient {
-            base_url: self.base_url.unwrap_or_else(|| DEFAULT_BASE_URL.to_string()),
+            base_url,
+            ws_url,
             api_key,
             http,
         })
@@ -187,10 +314,12 @@ mod tests {
         let client = PiaClient::builder()
             .api_key("test_key")
             .base_url("https://custom.api")
+            .ws_url("wss://custom.api/ws")
             .build()
             .expect("client build failed");
 
         assert_eq!(client.base_url(), "https://custom.api");
+        assert_eq!(client.ws_url(), "wss://custom.api/ws");
     }
 
     #[test]
