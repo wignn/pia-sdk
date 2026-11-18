@@ -31,6 +31,8 @@ export interface MarketPrice {
   volume?: number;
   volume_type?: "exchange" | "tick" | "unavailable";
   volume_available?: boolean;
+  received_at?: string;
+  provider_source?: string;
   asset_type?: "fx" | "crypto" | "equity" | "commodity" | "index" | string;
   session_open?: boolean;
   timestamp?: number;

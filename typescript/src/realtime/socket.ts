@@ -20,11 +20,18 @@ export class RealtimeClient extends TypedEventEmitter {
   private readonly subscribedSymbols: Set<string> = new Set();
   private reconnectAttempt = 0;
   private reconnectTimer: any = null;
+  private authTimeoutTimer: any = null;
   private isExplicitlyClosed = false;
   private pingIntervalTimer: any = null;
+  private socketGeneration = 0;
+  private lastPongAt = 0;
+  private lastMarketEventAt = 0;
+  private lastApplicationActivityAt = 0;
+  readonly #config: ResolvedPiaConfig;
 
-  constructor(private readonly config: ResolvedPiaConfig) {
+  constructor(config: ResolvedPiaConfig) {
     super();
+    this.#config = config;
   }
 
   /**
@@ -34,12 +41,24 @@ export class RealtimeClient extends TypedEventEmitter {
     return this.state;
   }
 
+  public getLastPongTime(): number {
+    return this.lastPongAt;
+  }
+
+  public getLastMarketEventTime(): number {
+    return this.lastMarketEventAt;
+  }
+
+  public getLastApplicationActivityTime(): number {
+    return this.lastApplicationActivityAt;
+  }
+
   /**
    * Connects to the Realtime WebSocket stream and performs In-Band Authentication.
    */
   public connect(): this {
     if (this.state === "CONNECTING" || this.state === "AUTHENTICATING" || this.state === "AUTHENTICATED") {
-      this.config.logger.debug("Socket already active or connecting.");
+      this.#config.logger.debug("Socket already active or connecting.");
       return this;
     }
 
@@ -49,8 +68,10 @@ export class RealtimeClient extends TypedEventEmitter {
   }
 
   private initiateConnection(): void {
+    const generation = ++this.socketGeneration;
+    this.clearAuthTimeout();
     const WsConstructor: any =
-      this.config.WebSocket ||
+      this.#config.WebSocket ||
       (typeof globalThis !== "undefined" && (globalThis as any).WebSocket);
 
     if (!WsConstructor) {
@@ -60,53 +81,68 @@ export class RealtimeClient extends TypedEventEmitter {
     }
 
     this.state = "CONNECTING";
-    this.config.logger.info(`Connecting to Realtime WebSocket: ${this.config.wsUrl}`);
+    this.emit("state", this.state);
+    this.#config.logger.info(`Connecting to Realtime WebSocket: ${this.#config.wsUrl}`);
 
     try {
-      this.ws = new WsConstructor(this.config.wsUrl);
+      this.ws = new WsConstructor(this.#config.wsUrl);
     } catch (err) {
       this.handleSocketFailure(err);
       return;
     }
 
     this.ws.onopen = () => {
-      this.config.logger.info("WebSocket TCP connection opened. Initiating In-Band Auth...");
+      this.#config.logger.info("WebSocket TCP connection opened. Initiating In-Band Auth...");
+      if (generation !== this.socketGeneration || this.isExplicitlyClosed) return;
       this.state = "AUTHENTICATING";
-      this.reconnectAttempt = 0;
+      this.emit("state", this.state);
       this.emit("connect");
 
       // Send In-Band Auth frame immediately
-      this.sendRaw({
+      if (!this.sendRaw({
         action: "auth",
-        api_key: this.config.apiKey,
-      });
+        api_key: this.#config.apiKey,
+      })) {
+        this.handleSocketFailure(new NetworkError("Failed to send WebSocket authentication frame"));
+        return;
+      }
 
+      this.authTimeoutTimer = setTimeout(() => {
+        if (generation !== this.socketGeneration || this.state !== "AUTHENTICATING") return;
+        this.#config.logger.warn("Realtime authentication timed out; reconnecting.");
+        this.ws?.close(4000, "Authentication timeout");
+      }, this.#config.timeoutMs);
       this.startHeartbeat();
     };
 
     this.ws.onmessage = (event: any) => {
+      if (generation !== this.socketGeneration) return;
       this.handleIncomingMessage(event.data);
     };
 
     this.ws.onerror = (event: any) => {
+      if (generation !== this.socketGeneration) return;
       const err = new NetworkError(
         "WebSocket connection error",
         event?.message || event?.error || event
       );
-      this.config.logger.error("WebSocket error:", err.message);
+      this.#config.logger.error("WebSocket error:", err.message);
       this.emit("error", err);
     };
 
     this.ws.onclose = (event: any) => {
+      if (generation !== this.socketGeneration) return;
+      this.clearAuthTimeout();
       const code = event?.code ?? 1006;
       const reason = event?.reason ?? "";
       const wasClean = event?.wasClean ?? false;
 
       this.stopHeartbeat();
       this.state = "DISCONNECTED";
+      this.emit("state", this.state);
       this.ws = null;
 
-      this.config.logger.warn(`WebSocket closed: code=${code}, reason=${reason}`);
+      this.#config.logger.warn(`WebSocket closed: code=${code}, reason=${reason}`);
       this.emit("disconnect", { code, reason, wasClean });
 
       // Code 4001: Unauthorized (Bad API key or rejected) - do not reconnect loop
@@ -142,12 +178,23 @@ export class RealtimeClient extends TypedEventEmitter {
       return;
     }
 
+    this.lastApplicationActivityAt = Date.now();
     this.emit("raw", payload);
+
+    if (payload.event === "pong" || payload.result === "pong") {
+      this.lastPongAt = Date.now();
+      this.emit("pong", { receivedAt: this.lastPongAt });
+      return;
+    }
 
     // 1. Auth confirmation
     if (payload.event === "authenticated") {
+      if (this.state !== "AUTHENTICATING") return;
+      this.clearAuthTimeout();
+      this.reconnectAttempt = 0;
       this.state = "AUTHENTICATED";
-      this.config.logger.info("WebSocket authenticated successfully.");
+      this.emit("state", this.state);
+      this.#config.logger.info("WebSocket authenticated successfully.");
       this.emit("authenticated", payload.data || {});
 
       // Resubscribe to tracked symbols
@@ -159,8 +206,11 @@ export class RealtimeClient extends TypedEventEmitter {
 
     // 2. Market price tick
     if (payload.event === "market.trade" || payload.event === "market.tick") {
+      if (this.state !== "AUTHENTICATED") return;
       const tick = payload.data?.tick || payload.data;
       if (tick) {
+        this.lastMarketEventAt = Date.now();
+        this.emit("marketActivity", { receivedAt: this.lastMarketEventAt, symbol: tick.symbol });
         this.emit("tick", tick);
       }
       return;
@@ -168,6 +218,9 @@ export class RealtimeClient extends TypedEventEmitter {
 
     // 3. Initial market snapshot
     if (payload.event === "market.snapshot" && payload.data) {
+      if (this.state !== "AUTHENTICATED") return;
+      this.lastMarketEventAt = Date.now();
+      this.emit("marketActivity", { receivedAt: this.lastMarketEventAt });
       this.emit("snapshot", payload.data);
       return;
     }
@@ -264,7 +317,7 @@ export class RealtimeClient extends TypedEventEmitter {
       this.ws.send(JSON.stringify(data));
       return true;
     } catch (err) {
-      this.config.logger.error("Failed to send WebSocket message:", err);
+      this.#config.logger.error("Failed to send WebSocket message:", err);
       return false;
     }
   }
@@ -275,7 +328,7 @@ export class RealtimeClient extends TypedEventEmitter {
     const delay = Math.min(1000 * Math.pow(1.5, this.reconnectAttempt - 1), 15000);
     const jitteredDelay = Math.round(delay * (0.8 + Math.random() * 0.4));
 
-    this.config.logger.info(
+    this.#config.logger.info(
       `Reconnecting in ${jitteredDelay}ms (Attempt ${this.reconnectAttempt})...`
     );
 
@@ -294,6 +347,13 @@ export class RealtimeClient extends TypedEventEmitter {
     this.emit("error", netErr);
     if (!this.isExplicitlyClosed) {
       this.scheduleReconnect();
+    }
+  }
+
+  private clearAuthTimeout(): void {
+    if (this.authTimeoutTimer) {
+      clearTimeout(this.authTimeoutTimer);
+      this.authTimeoutTimer = null;
     }
   }
 
@@ -319,6 +379,8 @@ export class RealtimeClient extends TypedEventEmitter {
    */
   public disconnect(): void {
     this.isExplicitlyClosed = true;
+    this.socketGeneration++;
+    this.clearAuthTimeout();
     this.stopHeartbeat();
     clearTimeout(this.reconnectTimer);
 
@@ -333,5 +395,6 @@ export class RealtimeClient extends TypedEventEmitter {
     }
 
     this.state = "DISCONNECTED";
+    this.emit("state", this.state);
   }
 }

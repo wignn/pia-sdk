@@ -6,12 +6,15 @@ import type { MarketPrice } from "../types";
 
 export interface RealtimeEvents {
   connect: () => void;
+  state: (state: "DISCONNECTED" | "CONNECTING" | "AUTHENTICATING" | "AUTHENTICATED" | "CLOSING") => void;
   authenticated: (data: { user_id?: string; plan?: string; ws_connections_max?: number }) => void;
   disconnect: (reason: { code: number; reason: string; wasClean: boolean }) => void;
   error: (error: Error) => void;
   tick: (tick: MarketPrice) => void;
   snapshot: (snapshot: { total: number; items: MarketPrice[] }) => void;
   raw: (data: unknown) => void;
+  pong: (data: { receivedAt: number }) => void;
+  marketActivity: (data: { receivedAt: number; symbol?: string }) => void;
 }
 
 export type EventKey = keyof RealtimeEvents;

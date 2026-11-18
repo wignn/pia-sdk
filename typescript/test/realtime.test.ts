@@ -108,6 +108,91 @@ describe("RealtimeClient - In-Band Message Auth & Streaming", () => {
     client.disconnect();
   });
 
+  it("authTimeoutClosesSocket", async () => {
+    const config = resolveConfig({ apiKey: "test_key", timeoutMs: 100, WebSocket: MockWebSocket as any });
+    const client = new RealtimeClient(config);
+    try {
+      MockWebSocket.instances = [];
+      client.connect();
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      const socket = MockWebSocket.instances.at(-1)!;
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      expect(socket.readyState).toBe(3);
+    } finally {
+      client.disconnect();
+    }
+  });
+
+  it("marketTickTypeRetainsReceiptAndProviderProvenance", () => {
+    const tick: import("../src/types").MarketPrice = {
+      symbol: "XAUUSD",
+      price: 2500,
+      bid: 2499,
+      ask: 2501,
+      received_at: "2026-11-18T00:00:00Z",
+      provider_source: "ctrader_fix",
+    };
+    expect(tick.received_at).toBe("2026-11-18T00:00:00Z");
+    expect(tick.provider_source).toBe("ctrader_fix");
+  });
+
+  it("pongWithoutMarketTickDoesNotAdvanceMarketFreshness", async () => {
+    const config = resolveConfig({ apiKey: "test_key", WebSocket: MockWebSocket as any });
+    const client = new RealtimeClient(config);
+    client.connect();
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    const socket = MockWebSocket.instances.at(-1)!;
+    socket.simulateMessage({ event: "authenticated" });
+    const marketAt = client.getLastMarketEventTime();
+    socket.simulateMessage({ event: "pong" });
+    expect(client.getLastPongTime()).toBeGreaterThan(0);
+    expect(client.getLastMarketEventTime()).toBe(marketAt);
+    client.disconnect();
+  });
+
+  it("reconnectResubscribesAfterAuth", async () => {
+    const config = resolveConfig({ apiKey: "test_key", WebSocket: MockWebSocket as any });
+    const client = new RealtimeClient(config);
+    client.subscribe("XAUUSD");
+    client.connect();
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    const previous = MockWebSocket.instances.at(-1)!;
+    previous.simulateMessage({ event: "authenticated" });
+    previous.close(1006, "network lost");
+    await new Promise((resolve) => setTimeout(resolve, 1300));
+    const next = MockWebSocket.instances.at(-1)!;
+    next.simulateMessage({ event: "authenticated" });
+    expect(next.sentMessages.some((m) => m.includes('"action":"subscribe"'))).toBe(true);
+    client.disconnect();
+  });
+
+  it("oldSocketEventsIgnored", async () => {
+    const config = resolveConfig({ apiKey: "test_key", WebSocket: MockWebSocket as any });
+    const client = new RealtimeClient(config);
+    const ticks: unknown[] = [];
+    client.on("tick", (tick) => ticks.push(tick));
+    client.connect();
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    const old = MockWebSocket.instances.at(-1)!;
+    old.close(1006, "reconnect");
+    await new Promise((resolve) => setTimeout(resolve, 1300));
+    const current = MockWebSocket.instances.at(-1)!;
+    current.simulateMessage({ event: "authenticated" });
+    old.simulateMessage({ event: "market.tick", data: { symbol: "STALE" } });
+    expect(ticks).toHaveLength(0);
+    client.disconnect();
+  });
+
+  it("explicitDisconnectDoesNotReconnect", async () => {
+    const before = MockWebSocket.instances.length;
+    const client = new RealtimeClient(resolveConfig({ apiKey: "test_key", WebSocket: MockWebSocket as any }));
+    client.connect();
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    client.disconnect();
+    await new Promise((resolve) => setTimeout(resolve, 1100));
+    expect(MockWebSocket.instances.length).toBe(before + 1);
+  });
+
   it("dispatches live tick events to listeners", async () => {
     MockWebSocket.instances = [];
 
@@ -117,6 +202,7 @@ describe("RealtimeClient - In-Band Message Auth & Streaming", () => {
     });
 
     const client = new RealtimeClient(config);
+    client.on("authenticated", () => {});
     let capturedTick: any = null;
 
     client.on("tick", (tick) => {
@@ -127,6 +213,7 @@ describe("RealtimeClient - In-Band Message Auth & Streaming", () => {
     await new Promise((resolve) => setTimeout(resolve, 20));
 
     const mockWs = MockWebSocket.instances[0];
+    mockWs.simulateMessage({ event: "authenticated" });
     mockWs.simulateMessage({
       event: "market.trade",
       data: {

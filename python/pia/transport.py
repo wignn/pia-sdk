@@ -6,7 +6,10 @@ import asyncio
 import json
 import logging
 import random
+import re
 import time
+from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
 from typing import Any, Dict, Optional, Set
 
 import httpx
@@ -24,8 +27,12 @@ from .errors import (
 from .logger import setup_logger
 from .types import RateLimitInfo
 
-SDK_VERSION = "1.3.8"
+SDK_VERSION = "1.3.13"
 RETRYABLE_STATUS_CODES: Set[int] = {408, 429, 500, 502, 503, 504}
+
+
+def _is_retry_safe(method: str) -> bool:
+    return method.upper() in {"GET", "HEAD"}
 
 
 def _parse_telemetry(headers: httpx.Headers) -> RateLimitInfo:
@@ -49,12 +56,41 @@ def _parse_telemetry(headers: httpx.Headers) -> RateLimitInfo:
 
 def _calc_backoff(attempt: int, retry_after: Optional[str], config: PiaConfig) -> float:
     if retry_after:
-        try:
-            val = float(retry_after)
-            if val > 0:
-                return min(val, config.max_retry_delay)
-        except ValueError:
-            pass
+        value = retry_after.strip()
+        if re.fullmatch(r"[0-9]+", value):
+            try:
+                return min(float(value), config.max_retry_delay)
+            except OverflowError:
+                return config.max_retry_delay
+        is_http_date = (
+            re.fullmatch(
+                r"(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun), \d{2} "
+                r"(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{4} "
+                r"\d{2}:\d{2}:\d{2} GMT",
+                value,
+            )
+            or re.fullmatch(
+                r"(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday), \d{2}-"
+                r"(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)-\d{2} "
+                r"\d{2}:\d{2}:\d{2} GMT",
+                value,
+            )
+            or re.fullmatch(
+                r"(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun) "
+                r"(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) {1,2}\d{1,2} "
+                r"\d{2}:\d{2}:\d{2} \d{4}",
+                value,
+            )
+        )
+        if is_http_date:
+            try:
+                retry_at = parsedate_to_datetime(value)
+                if retry_at.tzinfo is None:
+                    retry_at = retry_at.replace(tzinfo=timezone.utc)
+                remaining = max(0.0, (retry_at - datetime.now(timezone.utc)).total_seconds())
+                return min(remaining, config.max_retry_delay)
+            except (TypeError, ValueError, OverflowError):
+                pass
 
     base = config.retry_delay * (2 ** (attempt - 1))
     capped = min(base, config.max_retry_delay)
@@ -200,7 +236,11 @@ class SyncTransport:
                             method=method,
                         ) from err
 
-                is_retryable = response.status_code in RETRYABLE_STATUS_CODES and attempt <= max_retries
+                is_retryable = (
+                    response.status_code in RETRYABLE_STATUS_CODES
+                    and attempt <= max_retries
+                    and _is_retry_safe(method)
+                )
                 if is_retryable:
                     delay = _calc_backoff(attempt, response.headers.get("retry-after"), self.config)
                     self.logger.warning(
@@ -215,7 +255,7 @@ class SyncTransport:
                 _handle_error_response(response, endpoint, method, self._last_telemetry)
 
             except httpx.TimeoutException as err:
-                if attempt <= max_retries:
+                if attempt <= max_retries and _is_retry_safe(method):
                     delay = _calc_backoff(attempt, None, self.config)
                     self.logger.warning("Request timed out on %s. Retrying in %.2fs...", endpoint, delay)
                     time.sleep(delay)
@@ -228,7 +268,7 @@ class SyncTransport:
                 ) from err
 
             except httpx.NetworkError as err:
-                if attempt <= max_retries:
+                if attempt <= max_retries and _is_retry_safe(method):
                     delay = _calc_backoff(attempt, None, self.config)
                     self.logger.warning("Network error on %s: %s. Retrying in %.2fs...", endpoint, err, delay)
                     time.sleep(delay)
@@ -325,7 +365,11 @@ class AsyncTransport:
                             method=method,
                         ) from err
 
-                is_retryable = response.status_code in RETRYABLE_STATUS_CODES and attempt <= max_retries
+                is_retryable = (
+                    response.status_code in RETRYABLE_STATUS_CODES
+                    and attempt <= max_retries
+                    and _is_retry_safe(method)
+                )
                 if is_retryable:
                     delay = _calc_backoff(attempt, response.headers.get("retry-after"), self.config)
                     self.logger.warning(
@@ -334,16 +378,22 @@ class AsyncTransport:
                         response.status_code,
                         delay,
                     )
-                    await asyncio.sleep(delay)
+                    try:
+                        await asyncio.sleep(delay)
+                    except asyncio.CancelledError:
+                        raise
                     continue
 
                 _handle_error_response(response, endpoint, method, self._last_telemetry)
 
             except httpx.TimeoutException as err:
-                if attempt <= max_retries:
+                if attempt <= max_retries and _is_retry_safe(method):
                     delay = _calc_backoff(attempt, None, self.config)
                     self.logger.warning("Request timed out on %s. Retrying in %.2fs...", endpoint, delay)
-                    await asyncio.sleep(delay)
+                    try:
+                        await asyncio.sleep(delay)
+                    except asyncio.CancelledError:
+                        raise
                     continue
                 raise TimeoutError(
                     f"Request to {endpoint} timed out after {timeout or self.config.timeout}s.",
@@ -353,10 +403,13 @@ class AsyncTransport:
                 ) from err
 
             except httpx.NetworkError as err:
-                if attempt <= max_retries:
+                if attempt <= max_retries and _is_retry_safe(method):
                     delay = _calc_backoff(attempt, None, self.config)
                     self.logger.warning("Network error on %s: %s. Retrying in %.2fs...", endpoint, err, delay)
-                    await asyncio.sleep(delay)
+                    try:
+                        await asyncio.sleep(delay)
+                    except asyncio.CancelledError:
+                        raise
                     continue
                 raise NetworkError(
                     f"Network error connecting to {endpoint}: {err}",

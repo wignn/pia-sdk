@@ -49,6 +49,26 @@ describe("SDK Error Hierarchy & Security", () => {
     expect(err.minuteRemaining).toBe(0);
   });
 
+  it("redacts credentials embedded in URLs from error string formatting", () => {
+    const sentinel = "synthetic_secret_credential";
+    const err = new ApiError(`Request failed for https://user:${sentinel}@example.test/path?token=${sentinel}`, 500);
+    expect(String(err)).not.toContain(sentinel);
+    expect(JSON.stringify(err)).not.toContain(sentinel);
+  });
+
+  it("does not serialize raw server bodies or response text", () => {
+    const sentinel = "server_supplied_secret_sentinel";
+    const serializedErrors = [
+      new ApiError("Request failed", 500, { token: sentinel }),
+      new ParseError("Response could not be parsed", sentinel),
+      new ApiError("Request failed", 500, undefined, { rawResponse: sentinel }),
+    ].map((error) => JSON.stringify(error));
+
+    for (const serialized of serializedErrors) {
+      expect(serialized).not.toContain(sentinel);
+    }
+  });
+
   it("redacts sensitive keys from error logs and message strings", () => {
     const rawString =
       "Request failed with key wi_live_abcdef1234567890abcdef and Bearer secret_token_xyz";

@@ -18,12 +18,19 @@ import type { RateLimitInfo, RequestOptions } from "../types";
 const RETRYABLE_STATUS_CODES = new Set([
   408, 429, 500, 502, 503, 504, 520, 521, 522, 523, 524, 525, 526, 530
 ]);
-const SDK_VERSION = "1.3.11";
+const SDK_VERSION = "1.3.16";
+
+function isRetrySafeMethod(method: string): boolean {
+  return method === "GET" || method === "HEAD";
+}
 
 export class HttpTransport {
   private lastRateLimitInfo: RateLimitInfo = {};
+  readonly #config: ResolvedPiaConfig;
 
-  constructor(private readonly config: ResolvedPiaConfig) {}
+  constructor(config: ResolvedPiaConfig) {
+    this.#config = config;
+  }
 
   /**
    * Returns the most recent rate limit headers telemetry recorded by the SDK.
@@ -41,15 +48,15 @@ export class HttpTransport {
     body?: unknown,
     options?: RequestOptions
   ): Promise<T> {
-    const url = `${this.config.baseUrl}${endpoint.startsWith("/") ? "" : "/"}${endpoint}`;
-    const maxRetries = options?.maxRetries ?? this.config.maxRetries;
-    const timeoutMs = options?.timeoutMs ?? this.config.timeoutMs;
+    const url = `${this.#config.baseUrl}${endpoint.startsWith("/") ? "" : "/"}${endpoint}`;
+    const maxRetries = options?.maxRetries ?? this.#config.maxRetries;
+    const timeoutMs = options?.timeoutMs ?? this.#config.timeoutMs;
 
     let attempt = 0;
 
     while (true) {
       attempt++;
-      this.config.logger.debug(
+      this.#config.logger.debug(
         `HTTP ${method} ${endpoint} (Attempt ${attempt}/${maxRetries + 1})`
       );
 
@@ -62,28 +69,23 @@ export class HttpTransport {
       }, timeoutMs);
 
       // Chain caller's abort signal if provided
-      if (options?.signal) {
-        if (options.signal.aborted) {
+      const callerSignal = options?.signal;
+      const onCallerAbort = () => controller.abort(callerSignal?.reason);
+      if (callerSignal) {
+        if (callerSignal.aborted) {
           clearTimeout(timer);
-          throw options.signal.reason;
+          throw callerSignal.reason;
         }
-        options.signal.addEventListener(
-          "abort",
-          () => {
-            clearTimeout(timer);
-            controller.abort(options.signal?.reason);
-          },
-          { once: true }
-        );
+        callerSignal.addEventListener("abort", onCallerAbort, { once: true });
       }
 
       try {
         const headers: Record<string, string> = {
-          Authorization: `Bearer ${this.config.apiKey}`,
-          "x-api-key": this.config.apiKey,
+          Authorization: `Bearer ${this.#config.apiKey}`,
+          "x-api-key": this.#config.apiKey,
           Accept: "application/json",
           "User-Agent": `pia-sdk-ts/${SDK_VERSION}`,
-          ...this.config.headers,
+          ...this.#config.headers,
           ...(options?.headers || {}),
         };
 
@@ -93,14 +95,14 @@ export class HttpTransport {
           serializedBody = JSON.stringify(body);
         }
 
-        const response = await this.config.fetch(url, {
+        const response = await this.#config.fetch(url, {
           method,
           headers,
           body: serializedBody,
           signal: controller.signal,
         });
 
-        clearTimeout(timer);
+        // Keep the deadline active until the body has been fully consumed.
 
         // Extract rate limit and quota headers
         this.parseTelemetryHeaders(response.headers);
@@ -135,22 +137,21 @@ export class HttpTransport {
           ? `Edge tunnel gateway temporarily unavailable (HTTP ${status})`
           : rawErrorMessage;
 
-        const isRetryable = RETRYABLE_STATUS_CODES.has(status) && attempt <= maxRetries;
+        const isRetryable =
+          RETRYABLE_STATUS_CODES.has(status) && attempt <= maxRetries && isRetrySafeMethod(method);
 
         if (isRetryable) {
           const delay = this.calculateBackoffDelay(attempt, response.headers);
-          this.config.logger.warn(
+          await this.sleep(delay, callerSignal);
+          this.#config.logger.warn(
             `Request to ${endpoint} failed with HTTP ${status}. Retrying in ${delay}ms...`
           );
-          await this.sleep(delay);
           continue;
         }
 
         // Map non-retryable or exhausted errors
         this.handleHttpError(status, errorMessage, endpoint, method, response.headers, errorJson);
       } catch (err: unknown) {
-        clearTimeout(timer);
-
         if (isTimedOut) {
           throw new TimeoutError(
             `Request to ${endpoint} exceeded timeout of ${timeoutMs}ms.`,
@@ -160,8 +161,8 @@ export class HttpTransport {
         }
 
         // If caller explicitly aborted
-        if (options?.signal?.aborted) {
-          throw options.signal.reason;
+        if (callerSignal?.aborted) {
+          throw callerSignal.reason;
         }
 
         // If it's already a typed PiaError, rethrow
@@ -170,12 +171,12 @@ export class HttpTransport {
         }
 
         // Check if transient network failure is retryable
-        if (attempt <= maxRetries) {
+        if (attempt <= maxRetries && isRetrySafeMethod(method)) {
           const delay = this.calculateBackoffDelay(attempt);
-          this.config.logger.warn(
+          this.#config.logger.warn(
             `Network error calling ${endpoint}: ${err instanceof Error ? err.message : String(err)}. Retrying in ${delay}ms...`
           );
-          await this.sleep(delay);
+          await this.sleep(delay, callerSignal);
           continue;
         }
 
@@ -184,6 +185,9 @@ export class HttpTransport {
           err,
           { endpoint, method }
         );
+      } finally {
+        clearTimeout(timer);
+        callerSignal?.removeEventListener("abort", onCallerAbort);
       }
     }
   }
@@ -209,17 +213,39 @@ export class HttpTransport {
     // Respect Retry-After header if provided
     const retryAfter = headers?.get("retry-after");
     if (retryAfter) {
-      const parsedSeconds = parseInt(retryAfter, 10);
-      if (Number.isFinite(parsedSeconds) && parsedSeconds > 0) {
-        return Math.min(parsedSeconds * 1000, this.config.maxRetryDelayMs);
+      const trimmed = retryAfter.trim();
+      if (/^\d+$/.test(trimmed)) {
+        const parsedSeconds = Number(trimmed);
+        if (!Number.isFinite(parsedSeconds)) {
+          return this.#config.maxRetryDelayMs;
+        }
+        if (parsedSeconds >= 0) {
+          return Math.min(parsedSeconds * 1000, this.#config.maxRetryDelayMs);
+        }
+      }
+
+      const retryAt = this.parseHttpDate(trimmed);
+      if (retryAt !== undefined) {
+        return Math.min(Math.max(0, retryAt - Date.now()), this.#config.maxRetryDelayMs);
       }
     }
 
     // Exponential backoff with Full Jitter
-    const base = this.config.retryDelayMs * Math.pow(2, attempt - 1);
-    const capped = Math.min(base, this.config.maxRetryDelayMs);
+    const base = this.#config.retryDelayMs * Math.pow(2, attempt - 1);
+    const capped = Math.min(base, this.#config.maxRetryDelayMs);
     const jitter = 0.5 + Math.random() * 0.5;
     return Math.round(capped * jitter);
+  }
+
+  private parseHttpDate(value: string): number | undefined {
+    const isHttpDate =
+      /^(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun), \d{2} (?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{4} \d{2}:\d{2}:\d{2} GMT$/.test(value) ||
+      /^(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday), \d{2}-(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)-\d{2} \d{2}:\d{2}:\d{2} GMT$/.test(value) ||
+      /^(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun) (?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) {1,2}\d{1,2} \d{2}:\d{2}:\d{2} \d{4}$/.test(value);
+    if (!isHttpDate) return undefined;
+
+    const timestamp = Date.parse(value);
+    return Number.isFinite(timestamp) ? timestamp : undefined;
   }
 
   private async parseResponseBody<T>(
@@ -287,7 +313,19 @@ export class HttpTransport {
     throw new PiaApiError(message, status, body, details);
   }
 
-  private sleep(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
+  private sleep(ms: number, signal?: AbortSignal): Promise<void> {
+    if (signal?.aborted) return Promise.reject(signal.reason);
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        signal?.removeEventListener("abort", onAbort);
+        resolve();
+      }, ms);
+      const onAbort = () => {
+        clearTimeout(timer);
+        signal?.removeEventListener("abort", onAbort);
+        reject(signal?.reason);
+      };
+      signal?.addEventListener("abort", onAbort, { once: true });
+    });
   }
 }

@@ -19,6 +19,10 @@ jobs:
         with:
           bun-version: latest
 
+      - name: Install TypeScript Dependencies
+        working-directory: typescript
+        run: bun install --frozen-lockfile
+
       - name: Run TypeScript Tests
         run: |
           cd typescript
@@ -66,7 +70,22 @@ jobs:
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
 
+      - name: Check Rust Formatting
+        run: |
+          cd rust
+          cargo fmt --all -- --check
+
+      - name: Run Rust Clippy
+        run: |
+          cd rust
+          cargo clippy --all-targets --all-features -- -D warnings
+
       - name: Run Rust Unit Tests
         run: |
           cd rust
           cargo test
+
+      - name: Check Rust Package Contents
+        run: |
+          cd rust
+          cargo package --list --allow-dirty

@@ -21,6 +21,8 @@ def redact_sensitive(text: str) -> str:
     """Redacts known API keys and tokens from strings to prevent logging leaks."""
     if not isinstance(text, str):
         text = str(text)
+    text = re.sub(r"(https?://|wss?://)[^/@\s]+@", r"\1[REDACTED]@", text, flags=re.IGNORECASE)
+    text = re.sub(r"([?&](?:token|api[_-]?key|key|password|secret)=)[^&#\s]*", r"\1[REDACTED]", text, flags=re.IGNORECASE)
 
     for pattern in _KEY_PATTERNS:
         def _repl(m: re.Match[str]) -> str:
@@ -48,16 +50,16 @@ class PiaError(Exception):
         request_id: Optional[str] = None,
         raw_response: Any = None,
     ) -> None:
-        self.raw_message = message
+        self.raw_message = redact_sensitive(message)
         self.status_code = status_code
-        self.endpoint = endpoint
+        self.endpoint = redact_sensitive(endpoint) if endpoint else None
         self.method = method
         self.request_id = request_id
-        self.raw_response = raw_response
-        super().__init__(redact_sensitive(message))
+        self.raw_response = None
+        super().__init__(self.raw_message)
 
     def __str__(self) -> str:
-        parts = [redact_sensitive(self.raw_message)]
+        parts = [self.raw_message]
         if self.status_code:
             parts.append(f"(status: {self.status_code})")
         if self.endpoint:

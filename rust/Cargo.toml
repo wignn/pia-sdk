@@ -1,6 +1,6 @@
 [package]
 name = "pia-sdk"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description = "Official Rust client SDK for the PIA Market Intelligence Platform"
 license = "MIT"
@@ -15,7 +15,7 @@ futures-util = { version = "0.3.34", features = ["sink"] }
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-tokio = { version = "1", features = ["net"] }
+tokio = { version = "1", features = ["net", "time"] }
 tokio-tungstenite = { version = "0.30.0", features = ["rustls-tls-webpki-roots"] }
 
 [dev-dependencies]

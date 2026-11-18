@@ -13,7 +13,7 @@ Designed for institutional algorithmic traders, fintech dashboards, and quantita
 - **Typed Error Hierarchy**: Clear, actionable, strongly-typed errors (`AuthenticationError`, `RateLimitError`, `TimeoutError`, `ValidationError`, `NetworkError`).
 - **Derivatives & Macro Intelligence**: Real-time Options Chain, Gamma Exposure (GEX), Fear & Greed Index, and CFTC Commitment of Traders (COT) positioning.
 - **Zero Sensitive Data Leaks**: Automatic redaction of API keys, bearer tokens, and secrets from error logs and stack traces.
-- **Cross-Platform Realtime Streaming**: Built-in resilient WebSocket client with **In-Band Message Authentication**, ping/pong keep-alives, and automatic re-subscription on reconnect.
+- **Cross-Platform Realtime Streaming**: Built-in WebSocket client with bounded authentication, reconnect state events, ping/pong liveness, separate market-event freshness, and automatic re-subscription. `MarketPrice` retains optional `received_at` and `provider_source` metadata when supplied by the API.
 - **Rate Limit Telemetry**: Real-time inspection of RFC 6585 and daily quota headers (`X-RateLimit-*`, `X-DailyQuota-*`).
 
 ---
@@ -124,6 +124,11 @@ client.realtime.on("authenticated", (info) => {
 client.realtime.on("tick", (tick) => {
   console.log(`[TICK] ${tick.symbol} -> $${tick.price} (bid: ${tick.bid}, ask: ${tick.ask})`);
 });
+
+// Observe explicit socket lifecycle and separate market freshness from pong liveness.
+client.realtime.on("state", (state) => console.log("Realtime state:", state));
+client.realtime.on("pong", ({ receivedAt }) => console.log("Heartbeat:", receivedAt));
+client.realtime.on("marketActivity", ({ receivedAt, symbol }) => console.log("Market tick:", symbol, receivedAt));
 
 // Handle disconnections (auto-reconnect is handled automatically)
 client.realtime.on("disconnect", ({ code, reason }) => {

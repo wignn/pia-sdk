@@ -20,14 +20,21 @@ export class PiaError extends Error {
   public readonly endpoint?: string;
   public readonly method?: string;
   public readonly requestId?: string | null;
+  public readonly rawResponse?: unknown;
 
   constructor(message: string, details?: PiaErrorDetails) {
-    super(message);
+    super(redactSensitive(message));
     this.name = "PiaError";
     this.statusCode = details?.statusCode;
     this.endpoint = details?.endpoint;
     this.method = details?.method;
     this.requestId = details?.requestId;
+    Object.defineProperty(this, "rawResponse", {
+      configurable: false,
+      enumerable: false,
+      value: details?.rawResponse,
+      writable: false,
+    });
 
     // Restore prototype chain for instanceof checks
     Object.setPrototypeOf(this, new.target.prototype);
@@ -149,7 +156,12 @@ export class ParseError extends PiaError {
   constructor(message: string, rawText?: string, details?: PiaErrorDetails) {
     super(message, details);
     this.name = "ParseError";
-    this.rawText = rawText;
+    Object.defineProperty(this, "rawText", {
+      configurable: false,
+      enumerable: false,
+      value: rawText,
+      writable: false,
+    });
   }
 }
 
@@ -162,7 +174,12 @@ export class ApiError extends PiaError {
   constructor(message: string, statusCode: number, rawBody?: unknown, details?: PiaErrorDetails) {
     super(message, { ...details, statusCode });
     this.name = "ApiError";
-    this.rawBody = rawBody;
+    Object.defineProperty(this, "rawBody", {
+      configurable: false,
+      enumerable: false,
+      value: rawBody,
+      writable: false,
+    });
   }
 }
 
@@ -188,6 +205,8 @@ export class UnsupportedFeatureError extends PiaUnsupportedFeatureError {}
 export function redactSensitive(input: string): string {
   if (!input || typeof input !== "string") return input;
   return input
+    .replace(/(https?:\/\/|wss?:\/\/)([^/@\s]+)@/gi, "$1[REDACTED]@")
+    .replace(/([?&](?:token|api[_-]?key|key|password|secret)=)[^&#\s]*/gi, "$1[REDACTED]")
     .replace(/wi_live_([a-zA-Z0-9_-]+)/g, (_match, p1) => {
       if (p1.length <= 4) return "wi_live_***";
       return `wi_live_***${p1.slice(-4)}`;

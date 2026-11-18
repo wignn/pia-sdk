@@ -132,13 +132,20 @@ export function resolveConfig(options: PiaClientOptions = {}): ResolvedPiaConfig
 
   try {
     const parsed = new URL(baseUrl);
-    if (!["http:", "https:"].includes(parsed.protocol)) {
-      throw new Error("Protocol must be http or https");
+    if (rawBaseUrl.includes("?") || rawBaseUrl.includes("#")) {
+      throw new Error("Base URL query strings and fragments are not permitted");
     }
-  } catch (err) {
-    throw new ConfigurationError(
-      `Invalid baseUrl '${baseUrl}': ${err instanceof Error ? err.message : String(err)}`
-    );
+    if (parsed.protocol !== "https:") {
+      throw new Error("Protocol must be https");
+    }
+    if (parsed.username || parsed.password) {
+      throw new Error("URL user information is not permitted");
+    }
+    if (parsed.search || parsed.hash) {
+      throw new Error("Base URL query strings and fragments are not permitted");
+    }
+  } catch {
+    throw new ConfigurationError("Invalid baseUrl. A valid HTTPS URL without embedded credentials is required.");
   }
 
   const rawWsUrl = options.wsUrl?.trim() || DEFAULT_WS_URL;
@@ -146,13 +153,14 @@ export function resolveConfig(options: PiaClientOptions = {}): ResolvedPiaConfig
 
   try {
     const parsedWs = new URL(wsUrl);
-    if (!["ws:", "wss:"].includes(parsedWs.protocol)) {
-      throw new Error("Protocol must be ws or wss");
+    if (parsedWs.protocol !== "wss:") {
+      throw new Error("Protocol must be wss");
     }
-  } catch (err) {
-    throw new ConfigurationError(
-      `Invalid wsUrl '${wsUrl}': ${err instanceof Error ? err.message : String(err)}`
-    );
+    if (parsedWs.username || parsedWs.password) {
+      throw new Error("URL user information is not permitted");
+    }
+  } catch {
+    throw new ConfigurationError("Invalid wsUrl. A valid WSS URL without embedded credentials is required.");
   }
 
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;

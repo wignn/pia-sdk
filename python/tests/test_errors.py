@@ -57,6 +57,13 @@ class TestPiaErrors(unittest.TestCase):
         self.assertIn("wi_live_***6789", sanitized)
         self.assertIn("Bearer [REDACTED]", sanitized)
 
+    def test_error_formatting_does_not_expose_credential_bearing_urls(self):
+        sentinel = "synthetic_secret_credential"
+        err = ApiError(f"Request failed at https://user:{sentinel}@example.test/path?token={sentinel}", status_code=500)
+        self.assertNotIn(sentinel, str(err))
+        self.assertNotIn(sentinel, repr(err))
+        self.assertNotIn(sentinel, err.args[0])
+
     def test_error_str_representation_redacts_keys(self):
         err = AuthenticationError("Key wi_live_998877665544332211 is invalid")
         self.assertNotIn("wi_live_998877665544332211", str(err))

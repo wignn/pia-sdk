@@ -7,6 +7,11 @@ from pia import ConfigurationError, PiaConfig
 
 
 class TestPiaConfig(unittest.TestCase):
+    def test_repr_does_not_expose_api_key(self):
+        sentinel = "synthetic_repr_secret"
+        config = PiaConfig.resolve(api_key=sentinel)
+        self.assertNotIn(sentinel, repr(config))
+
     def test_default_resolution_with_explicit_key(self):
         config = PiaConfig.resolve(api_key="wi_live_explicit_key")
         self.assertEqual(config.api_key, "wi_live_explicit_key")
@@ -39,6 +44,27 @@ class TestPiaConfig(unittest.TestCase):
         finally:
             del os.environ["PIA_API_KEY"]
 
+    def test_rejects_malformed_https_port_without_rejecting_valid_port_and_path(self):
+        with self.assertRaises(ConfigurationError):
+            PiaConfig.resolve(api_key="test", base_url="https://api.example.test:invalid")
+        with self.assertRaises(ConfigurationError):
+            PiaConfig.resolve(api_key="test", base_url="https://api.example.test:65536")
+
+        config = PiaConfig.resolve(api_key="test", base_url="https://api.example.test:8443/gateway/v1/")
+        self.assertEqual(config.base_url, "https://api.example.test:8443/gateway/v1")
+
+    def test_allows_base_url_path_but_rejects_query_and_fragment(self):
+        config = PiaConfig.resolve(api_key="test", base_url="https://custom.wign.dev/gateway/v1/")
+        self.assertEqual(config.base_url, "https://custom.wign.dev/gateway/v1")
+        for base_url in (
+            "https://custom.wign.dev?tenant=one",
+            "https://custom.wign.dev#section",
+            "https://custom.wign.dev?",
+            "https://custom.wign.dev#",
+        ):
+            with self.subTest(base_url=base_url), self.assertRaises(ConfigurationError):
+                PiaConfig.resolve(api_key="test", base_url=base_url)
+
     def test_strips_trailing_slashes(self):
         config = PiaConfig.resolve(
             api_key="test",
@@ -47,6 +73,19 @@ class TestPiaConfig(unittest.TestCase):
         )
         self.assertEqual(config.base_url, "https://custom.wign.dev")
         self.assertEqual(config.ws_url, "wss://custom.wign.dev/ws")
+
+    def test_rejects_insecure_credential_bearing_urls(self):
+        with self.assertRaises(ConfigurationError):
+            PiaConfig.resolve(api_key="synthetic_key", base_url="http://api.example.test")
+        with self.assertRaises(ConfigurationError):
+            PiaConfig.resolve(api_key="synthetic_key", ws_url="ws://api.example.test/ws")
+
+    def test_invalid_url_error_does_not_echo_credentials(self):
+        sentinel = "synthetic_secret_credential"
+        with self.assertRaises(ConfigurationError) as caught:
+            PiaConfig.resolve(api_key="synthetic_key", base_url=f"https://user:{sentinel}@example.test/path")
+        self.assertNotIn(sentinel, str(caught.exception))
+        self.assertNotIn(sentinel, repr(caught.exception))
 
     def test_invalid_urls_raise_error(self):
         with self.assertRaises(ConfigurationError):

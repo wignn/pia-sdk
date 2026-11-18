@@ -10,7 +10,7 @@ import threading
 from typing import Any, AsyncIterator, Callable, Dict, List, Optional, Set, Union
 
 from .config import PiaConfig
-from .errors import AuthenticationError, NetworkError
+from .errors import AuthenticationError, NetworkError, redact_sensitive
 from .logger import setup_logger
 from .types import MarketPrice
 
@@ -37,11 +37,17 @@ class AsyncRealtimeClient:
         self._ws: Any = None
         self._is_authenticated = False
         self._is_closed = False
+        self.last_pong_at = 0.0
+        self.last_market_event_at = 0.0
+        self.last_application_activity_at = 0.0
+        self.authentication_timeout = config.timeout
         self._handlers: Dict[str, List[Callable[..., Any]]] = {
             "connect": [],
             "authenticated": [],
             "tick": [],
             "snapshot": [],
+            "pong": [],
+            "market_activity": [],
             "disconnect": [],
             "error": [],
         }
@@ -104,32 +110,61 @@ class AsyncRealtimeClient:
         reconnect_attempt = 0
 
         while not self._is_closed:
+            authenticated_this_connection = False
             try:
                 self.logger.info("Connecting to WebSocket: %s", self.config.ws_url)
                 async with websockets.connect(
                     self.config.ws_url,
                     ping_interval=30,
                     ping_timeout=10,
+                    open_timeout=self.config.timeout,
                 ) as ws:
                     self._ws = ws
                     self._is_authenticated = False
-                    reconnect_attempt = 0
                     self._emit("connect")
 
-                    # 1. In-Band Message Authentication
                     auth_frame = {"action": "auth", "api_key": self.config.api_key}
                     await ws.send(json.dumps(auth_frame))
+
+                    async def authenticate() -> bool:
+                        async for message in ws:
+                            if self._is_closed:
+                                return False
+                            if await self._handle_raw_message(message):
+                                return True
+                        raise NetworkError("WebSocket closed before authentication")
+
+                    try:
+                        authenticated_this_connection = await asyncio.wait_for(
+                            authenticate(), timeout=self.authentication_timeout
+                        )
+                    except asyncio.TimeoutError as err:
+                        raise AuthenticationError("Realtime authentication timed out") from err
+
+                    if not authenticated_this_connection:
+                        raise AuthenticationError("WebSocket closed before authentication")
+                    if self.subscribed_symbols:
+                        await self._send_subscribe(list(self.subscribed_symbols))
+                    reconnect_attempt = 0
 
                     async for message in ws:
                         if self._is_closed:
                             break
                         await self._handle_raw_message(message)
+                    if not self._is_closed:
+                        raise NetworkError("Realtime connection closed")
 
             except asyncio.CancelledError:
-                break
+                raise
             except Exception as err:
-                self.logger.warning("WebSocket dropped: %s", err)
-                self._emit("disconnect", str(err))
+                self._is_authenticated = False
+                if self._ws is not None:
+                    try:
+                        await self._ws.close()
+                    except Exception:
+                        pass
+                self._ws = None
+                self._emit("disconnect", redact_sensitive(str(err)))
 
                 if self._is_closed:
                     break
@@ -139,36 +174,47 @@ class AsyncRealtimeClient:
                 self.logger.info("Reconnecting in %.2fs (Attempt %d)...", delay, reconnect_attempt)
                 await asyncio.sleep(delay)
 
-    async def _handle_raw_message(self, raw_message: Union[str, bytes]) -> None:
+    async def _handle_raw_message(self, raw_message: Union[str, bytes]) -> bool:
         try:
             payload = json.loads(raw_message)
         except Exception:
-            return
+            return False
 
         event = payload.get("event")
+        now = asyncio.get_running_loop().time()
+        self.last_application_activity_at = now
 
-        # 1. Auth confirmation
+        if event == "pong" or payload.get("result") == "pong":
+            self.last_pong_at = now
+            self._emit("pong", {"received_at": now})
+            return False
+
+        # Market payloads from unauthenticated or stale sockets never reach listeners.
+        if event in ("market.trade", "market.tick"):
+            if not self._is_authenticated:
+                return False
+            tick_dict = payload.get("data", {}).get("tick") or payload.get("data")
+            if isinstance(tick_dict, dict):
+                tick = MarketPrice.from_dict(tick_dict)
+                self.last_market_event_at = now
+                self._emit("market_activity", {"received_at": now, "symbol": tick.symbol})
+                self._emit("tick", tick)
+            return False
+
+        if event == "market.snapshot":
+            if not self._is_authenticated:
+                return False
+            self.last_market_event_at = now
+            self._emit("market_activity", {"received_at": now})
+            self._emit("snapshot", payload.get("data", {}))
+            return False
+
+        # Authentication success is scoped to the active handshake.
         if event == "authenticated":
             self._is_authenticated = True
             self.logger.info("Realtime session authenticated successfully.")
             self._emit("authenticated", payload.get("data", {}))
-
-            if self.subscribed_symbols:
-                await self._send_subscribe(list(self.subscribed_symbols))
-            return
-
-        # 2. Market price tick
-        if event in ("market.trade", "market.tick"):
-            tick_dict = payload.get("data", {}).get("tick") or payload.get("data")
-            if isinstance(tick_dict, dict):
-                tick = MarketPrice.from_dict(tick_dict)
-                self._emit("tick", tick)
-            return
-
-        # 3. Snapshot
-        if event == "market.snapshot":
-            self._emit("snapshot", payload.get("data", {}))
-            return
+            return True
 
         # 4. Error payload
         if payload.get("error"):
@@ -182,8 +228,10 @@ class AsyncRealtimeClient:
     async def close(self) -> None:
         """Closes the realtime stream connection."""
         self._is_closed = True
+        self._is_authenticated = False
         if self._ws:
             await self._ws.close()
+            self._ws = None
 
     async def disconnect(self) -> None:
         """Alias for `close()`."""

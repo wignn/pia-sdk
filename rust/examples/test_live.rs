@@ -20,15 +20,24 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("\n2. Fetching prices snapshot...");
     let prices = client.get_prices().await?;
     let items = prices.get("items").and_then(|i| i.as_array());
-    println!("  Prices returned: {} items", items.map(|v| v.len()).unwrap_or(0));
+    println!(
+        "  Prices returned: {} items",
+        items.map(|v| v.len()).unwrap_or(0)
+    );
 
     println!("\n3. Fetching candles (BTCUSDT 1m)...");
     let candles = client.get_candles("BTCUSDT", "1m", Some(5)).await?;
     let candle_items = candles.get("items").and_then(|i| i.as_array());
-    println!("  Candles returned: {} bars", candle_items.map(|v| v.len()).unwrap_or(0));
+    println!(
+        "  Candles returned: {} bars",
+        candle_items.map(|v| v.len()).unwrap_or(0)
+    );
     if let Some(list) = candle_items {
         if let Some(latest) = list.last() {
-            println!("  Latest candle: time={} close={}", latest["time"], latest["close"]);
+            println!(
+                "  Latest candle: time={} close={}",
+                latest["time"], latest["close"]
+            );
         }
     }
 

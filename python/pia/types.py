@@ -35,6 +35,8 @@ class MarketPrice:
     asset_type: Optional[str] = None
     session_open: Optional[bool] = None
     timestamp: Optional[int] = None
+    received_at: Optional[str] = None
+    provider_source: Optional[str] = None
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> MarketPrice:
@@ -75,6 +77,8 @@ class MarketPrice:
             asset_type=data.get("asset_type"),
             session_open=data.get("session_open"),
             timestamp=_int_or_none(data.get("timestamp")),
+            received_at=data.get("received_at"),
+            provider_source=data.get("provider_source"),
         )
 
     def to_dict(self) -> Dict[str, Any]:

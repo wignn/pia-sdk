@@ -20,8 +20,9 @@ import { WsResource } from "./resources/ws";
 import type { RateLimitInfo } from "./types";
 
 export class PiaClient {
-  public readonly config: Readonly<ResolvedPiaConfig>;
+  public readonly config: Readonly<Omit<ResolvedPiaConfig, "apiKey">>;
   private readonly transport: HttpTransport;
+  readonly #resolvedConfig: ResolvedPiaConfig;
 
   /**
    * Market data & prices API resource.
@@ -92,8 +93,10 @@ export class PiaClient {
    * Initializes a new PIA API Client.
    */
   constructor(options?: PiaClientOptions) {
-    this.config = resolveConfig(options);
-    this.transport = new HttpTransport(this.config);
+    this.#resolvedConfig = resolveConfig(options);
+    const { apiKey: _apiKey, ...publicConfig } = this.#resolvedConfig;
+    this.config = publicConfig;
+    this.transport = new HttpTransport(this.#resolvedConfig);
 
     this.market = new MarketResource(this.transport);
     this.intelligence = new IntelligenceResource(this.transport);
@@ -107,7 +110,7 @@ export class PiaClient {
     this.economic = new EconomicResource(this.transport);
     this.fixedIncome = new FixedIncomeResource(this.transport);
     this.ws = new WsResource(this.transport);
-    this.realtime = new RealtimeClient(this.config);
+    this.realtime = new RealtimeClient(this.#resolvedConfig);
   }
 
   /**

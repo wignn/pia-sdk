@@ -27,7 +27,7 @@ def _resolve_env_key() -> Optional[str]:
 
 @dataclass
 class PiaConfig:
-    api_key: str
+    api_key: str = field(repr=False)
     base_url: str = DEFAULT_BASE_URL
     ws_url: str = DEFAULT_WS_URL
     timeout: float = DEFAULT_TIMEOUT_SECONDS
@@ -58,16 +58,31 @@ class PiaConfig:
 
         raw_base = (base_url or DEFAULT_BASE_URL).strip().rstrip("/")
         parsed_base = urlparse(raw_base)
-        if parsed_base.scheme not in ("http", "https") or not parsed_base.netloc:
+        try:
+            parsed_base.port
+        except ValueError as exc:
             raise ConfigurationError(
-                f"Invalid base_url '{raw_base}'. Must be a valid HTTP/HTTPS URL."
+                "Invalid base_url. Must be a valid HTTPS URL without credentials, query, or fragment."
+            ) from exc
+        if (
+            parsed_base.scheme != "https"
+            or not parsed_base.netloc
+            or parsed_base.username
+            or parsed_base.password
+            or "?" in raw_base
+            or "#" in raw_base
+            or parsed_base.query
+            or parsed_base.fragment
+        ):
+            raise ConfigurationError(
+                "Invalid base_url. Must be a valid HTTPS URL without credentials, query, or fragment."
             )
 
         raw_ws = (ws_url or DEFAULT_WS_URL).strip().rstrip("/")
         parsed_ws = urlparse(raw_ws)
-        if parsed_ws.scheme not in ("ws", "wss") or not parsed_ws.netloc:
+        if parsed_ws.scheme != "wss" or not parsed_ws.netloc or parsed_ws.username or parsed_ws.password:
             raise ConfigurationError(
-                f"Invalid ws_url '{raw_ws}'. Must be a valid WS/WSS URL."
+                "Invalid ws_url. Must be a valid WSS URL without embedded credentials."
             )
 
         resolved_timeout = timeout if timeout is not None else DEFAULT_TIMEOUT_SECONDS

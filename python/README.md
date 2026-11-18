@@ -11,7 +11,7 @@ Designed for institutional quantitative trading bots, financial analytics, finte
 - **Simple, Intuitive API**: Start fetching market data in under 3 lines of code with zero unnecessary ceremony.
 - **Dual Proxy-Resilient Auth**: Transparently sends both standard `Authorization: Bearer <key>` and `x-api-key` headers to guarantee 100% compatibility across Cloudflare tunnels, enterprise WAFs, and internal gateways.
 - **Derivatives & Macro Intelligence**: Real-time Options Chain, Gamma Exposure (GEX), Fear & Greed Index, and CFTC Commitment of Traders (COT) positioning.
-- **Cross-Platform Realtime Streaming**: Resilient WebSocket client featuring **In-Band Message Authentication**, ping/pong keep-alives, auto-reconnect, and dynamic symbol subscriptions.
+- **Cross-Platform Realtime Streaming**: WebSocket client featuring **In-Band Message Authentication**, a bounded auth deadline, jittered reconnect backoff, and subscription restoration. Pong/application/market freshness timestamps are separate; `MarketPrice` retains optional `received_at` and `provider_source` metadata.
 - **Typed Exception Hierarchy**: Actionable exceptions (`AuthenticationError`, `RateLimitError`, `TimeoutError`, `ValidationError`, `NetworkError`) with detailed quota telemetry attributes.
 - **Zero Sensitive Data Leaks**: Automatic regex redaction of `wi_live_...` API keys and Bearer tokens in error strings and logs.
 - **Dual Sync & Async Support**: Both synchronous (`PiaClient`) and modern asyncio (`AsyncPiaClient`) interfaces available.
@@ -118,6 +118,8 @@ from pia import AsyncPiaClient
 
 async def main():
     async with AsyncPiaClient(api_key="wi_live_...") as client:
+        client.realtime.on("pong", lambda status: print("heartbeat", status["received_at"]))
+        client.realtime.on("market_activity", lambda status: print("market", status))
         async for tick in client.realtime.stream(["XAUUSD", "BTCUSDT", "EURUSD"]):
             print(f"[TICK] {tick.symbol} -> ${tick.price:.2f} (bid: {tick.bid}, ask: {tick.ask})")
 
